@@ -54,6 +54,17 @@
     box-shadow: 0 0 0 2px #000;
   }
 
+  #level-display {
+    position: absolute;
+    top: 44px;
+    left: 12px;
+    padding: 5px 9px;
+    background: rgba(0, 0, 0, 0.65);
+    border: 2px solid #7ee787;
+    box-shadow: 0 0 0 2px #000;
+    color: #7ee787;
+  }
+
   #hiscore-display {
     position: absolute;
     top: 10px;
@@ -66,9 +77,8 @@
     color: #f5a623;
   }
 
-  #sound-toggle {
+  #sound-toggle, #settings-toggle {
     position: absolute;
-    top: 10px;
     right: 12px;
     padding: 6px 10px;
     background: #222;
@@ -85,17 +95,21 @@
     pointer-events: auto;
   }
 
-  #sound-toggle:active, #sound-toggle:hover { background: #444; }
+  #sound-toggle { top: 10px; }
+  #settings-toggle { top: 44px; }
+
+  #sound-toggle:active, #sound-toggle:hover,
+  #settings-toggle:active, #settings-toggle:hover { background: #444; }
 
   /* ---------- Herd meter ---------- */
 
   #meter-container {
     position: absolute;
-    top: 58px;
+    top: 92px;
     right: 12px;
     width: 34px;
-    height: 30vh;
-    max-height: 230px;
+    height: 28vh;
+    max-height: 210px;
     background: #111;
     border: 3px solid #fff;
     box-shadow: 0 0 0 2px #000;
@@ -161,7 +175,7 @@
     border: 4px solid #fff;
     box-shadow: 0 0 0 3px #000, 0 8px 0 3px rgba(0,0,0,0.45);
     padding: 20px 26px;
-    max-width: 340px;
+    max-width: 360px;
   }
 
   #splash-overlay { align-items: flex-start; padding-top: 10vh; }
@@ -202,24 +216,84 @@
   .blink { animation: blink 1s steps(1) infinite; }
   @keyframes blink { 50% { opacity: 0.45; } }
 
-  #game-over-overlay {
+  #game-over-overlay, #level-clear-overlay, #settings-overlay {
     background: rgba(0, 0, 0, 0.85);
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.25s ease-out;
   }
 
-  #game-over-overlay.visible { opacity: 1; pointer-events: auto; }
+  #game-over-overlay.visible, #level-clear-overlay.visible,
+  #settings-overlay.visible { opacity: 1; pointer-events: auto; }
 
   #game-over-panel { background: linear-gradient(#5b1b8f, #2b0c46); }
+  #level-clear-panel { background: linear-gradient(#1c7a3d, #0b3d1d); }
+  #settings-panel { background: linear-gradient(#444a52, #23262b); min-width: 260px; }
 
   .go-title { font-size: 26px; color: #ff5544; margin-bottom: 8px; font-weight: bold;
     text-shadow:
       2px 0 #5a0d00, -2px 0 #5a0d00, 0 2px #5a0d00, 0 -2px #5a0d00, 4px 4px #000; }
 
-  #final-score { font-size: 12px; margin-bottom: 6px; }
+  .clear-title { font-size: 22px; color: #7ee787; margin-bottom: 8px; font-weight: bold;
+    text-shadow:
+      2px 0 #0b3d1d, -2px 0 #0b3d1d, 0 2px #0b3d1d, 0 -2px #0b3d1d, 4px 4px #000; }
+
+  .settings-title { font-size: 18px; color: #f5a623; margin-bottom: 14px; font-weight: bold; }
+
+  #final-score, #final-level { font-size: 12px; margin-bottom: 6px; }
   #new-hiscore { font-size: 11px; color: #f5a623; margin-bottom: 10px; display: none; }
   #hint-text { font-size: 9px; margin-top: 12px; opacity: 0.85; letter-spacing: 1px; }
+  #clear-bonus { font-size: 11px; color: #ffe36e; margin-bottom: 14px; }
+  #clear-sub { font-size: 10px; margin-bottom: 6px; }
+
+  .slider-row { margin-bottom: 14px; text-align: left; }
+  .slider-row label {
+    display: block;
+    font-size: 10px;
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  .slider-row .slider-value { float: right; color: #f5a623; }
+  .slider-row input[type=range] {
+    width: 100%;
+    accent-color: #f5a623;
+    cursor: pointer;
+  }
+  #settings-hint { font-size: 8px; opacity: 0.75; margin: 4px 0 14px; text-align: left; }
+
+  /* ---------- Level banner ---------- */
+
+  #level-banner {
+    position: absolute;
+    top: 30%;
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    text-shadow:
+      2px 0 #000, -2px 0 #000, 0 2px #000, 0 -2px #000, 4px 4px #000;
+    pointer-events: none;
+    opacity: 0;
+  }
+
+  #level-banner .banner-sub {
+    display: block;
+    font-size: 13px;
+    color: #ffe36e;
+    margin-top: 6px;
+  }
+
+  #level-banner.show { animation: bannerFade 2.2s ease-out forwards; }
+
+  @keyframes bannerFade {
+    0%   { opacity: 0; transform: translateY(8px); }
+    12%  { opacity: 1; transform: translateY(0); }
+    75%  { opacity: 1; }
+    100% { opacity: 0; }
+  }
 
   .hidden { display: none !important; }
 </style>
@@ -230,8 +304,10 @@
 
   <div class="hud">
     <div id="score-display">Score <span id="score-value">00000</span></div>
+    <div id="level-display">Lv <span id="level-num">1</span> &bull; <span id="quota-progress">0/10</span></div>
     <div id="hiscore-display">Hi <span id="hiscore-value">00000</span></div>
     <button id="sound-toggle">Sound: On</button>
+    <button id="settings-toggle">Settings</button>
 
     <div id="meter-container">
       <div id="meter-label">Herd</div>
@@ -240,22 +316,54 @@
     </div>
   </div>
 
+  <div id="level-banner"></div>
+
   <div id="splash-overlay" class="overlay">
     <div id="splash-panel" class="panel">
       <div class="big-title">Cow<br>Clicker</div>
-      <div class="subtitle">Click the herd before it takes over</div>
+      <div class="subtitle">Clear each level before the farm overflows</div>
       <button id="start-game" class="pixel-btn blink">Press Start</button>
+    </div>
+  </div>
+
+  <div id="level-clear-overlay" class="overlay">
+    <div id="level-clear-panel" class="panel">
+      <div class="clear-title" id="clear-title">Level 1 Clear!</div>
+      <div id="clear-sub">The pasture is safe... for now</div>
+      <div id="clear-bonus">Bonus +05</div>
+      <button id="next-level" class="pixel-btn">Next Level</button>
+    </div>
+  </div>
+
+  <div id="settings-overlay" class="overlay">
+    <div id="settings-panel" class="panel">
+      <div class="settings-title">Settings</div>
+      <div class="slider-row">
+        <label>Herd Speed <span class="slider-value" id="speed-value">100%</span></label>
+        <input type="range" id="speed-slider" min="50" max="200" step="5" value="100">
+      </div>
+      <div class="slider-row">
+        <label>Spawn Rate <span class="slider-value" id="spawn-value">100%</span></label>
+        <input type="range" id="spawn-slider" min="50" max="200" step="5" value="100">
+      </div>
+      <div class="slider-row">
+        <label>Field Capacity <span class="slider-value" id="capacity-value">30</span></label>
+        <input type="range" id="capacity-slider" min="15" max="50" step="1" value="30">
+      </div>
+      <div id="settings-hint">Capacity is how many animals fit on the field before the herd wins. Lower = harder.</div>
+      <button id="settings-close" class="pixel-btn">Close</button>
     </div>
   </div>
 
   <div id="game-over-overlay" class="overlay">
     <div id="game-over-panel" class="panel">
       <div class="go-title">Game Over</div>
-      <div class="subtitle">The cows got their revenge!</div>
+      <div class="subtitle">The animals got their revenge!</div>
       <div id="final-score">Final Score 00000</div>
+      <div id="final-level">You made it to Level 1</div>
       <div id="new-hiscore">New Hi Score!</div>
       <button id="play-again" class="pixel-btn">Play Again</button>
-      <div id="hint-text">Click cows fast to keep the field from overflowing</div>
+      <div id="hint-text">Click animals fast to keep the field from overflowing</div>
     </div>
   </div>
 </div>
@@ -264,16 +372,6 @@
 "use strict";
 
 (function () {
-
-  // ======================= CONFIG =======================
-
-  const MAX_COWS = 30;
-  const INITIAL_SPAWN_INTERVAL = 1.8;   // seconds
-  const MIN_SPAWN_INTERVAL = 0.35;
-  const SPAWN_RAMP = 0.055;             // interval shrink per second of play
-  const SKY_COW_CHANCE = 0.22;
-  const HORIZON = 0.44;                 // fraction of screen height
-  const EXPLOSION_DURATION = 0.4;
 
   // ======================= CANVAS / LOW-RES BUFFER =======================
 
@@ -287,6 +385,8 @@
   let VW = 320, VH = 180;   // virtual (buffer) size
   let pixelScale = 3;
   let sizedW = 0, sizedH = 0;   // root size the buffers were built for
+
+  const HORIZON = 0.44;
 
   function resize() {
     sizedW = rootEl.clientWidth; sizedH = rootEl.clientHeight;
@@ -398,6 +498,14 @@
     b: "#5d6378",
   });
 
+  const GOLDEN_PALETTE = Object.assign({}, HOLSTEIN_PALETTE, {
+    W: "#f7dd7a",
+    w: "#dcb84f",
+    B: "#c9962e",
+    b: "#dca53a",
+    H: "#fff2c0",
+  });
+
   // Wing frames for the sky cow (drawn above the back), facing left.
   const WING_PALETTE = { o: "#241f1c", F: "#dde6ff", f: "#8fa3d9" };
   const WING_ROWS = [
@@ -424,6 +532,84 @@
       "....oFffo....",
       ".....ooo.....",
     ],
+  ];
+
+  // --- Chicken (facing left). Legs drawn at runtime. ---
+  // C comb/wattle red, Y beak/legs orange, W body, w shade, E eye
+  const CHICKEN_PALETTE = {
+    o: "#241f1c",
+    W: "#f5f2e6",
+    w: "#d8d2bd",
+    C: "#d9342b",
+    Y: "#e8962e",
+    E: "#141210",
+  };
+
+  const CHICKEN_BODY_ROWS = [
+    "..oCCo",
+    ".oCCCo",
+    ".oWEWWo.....o",
+    "YoWWWWo....oWo",
+    ".oCWWWo...oWWo",
+    ".oCoWWWo.oWWWo",
+    "...oWWWWoWWWWo",
+    "...oWWWWWwWWo",
+    "....oWWWwwWWo",
+    ".....oWWWWWo",
+    "......ooooo",
+  ];
+
+  // --- Pig (facing left). Legs drawn at runtime. ---
+  // P body, p shade, S snout, N nostril, E eye, T tail
+  const PIG_PALETTE = {
+    o: "#38222c",
+    P: "#f0aab6",
+    p: "#d18a99",
+    S: "#de93a2",
+    N: "#8f4a5c",
+    E: "#141210",
+    T: "#d18a99",
+  };
+
+  const PIG_BODY_ROWS = [
+    "....oo...ooooooooooo",
+    "...oPPo.oPPPPPPPPPPPoo",
+    "..oPPPPoPPPPPPPPPPPPPPo",
+    ".oPPEPPPPPPPPPPPPPPPPPPo.oo",
+    "oSSPPPPPPPPPPPPPPPPPPPPooToo",
+    "oSNPPPPPPPPPPPPPPPPPPPPPoToo",
+    "oSNPPPPPPPPPPPPPPPPPPPPPooo",
+    "oSSpPPPPPPPPPPPPPPPPPPPPo",
+    ".oppPPPPPPPPPPPPPPPPPPPo",
+    "..opPPPPPpppPPPPPPPPPpo",
+    "...oPPPPpppppPPPPPPPpo",
+    "....ooooooooooooooooo",
+  ];
+
+  // --- Sheep (facing left). Legs drawn at runtime. ---
+  // F fleece, f fleece shade, K dark face/legs, E eye
+  const SHEEP_PALETTE = {
+    o: "#241f1c",
+    F: "#f4f2ec",
+    f: "#d6d3c8",
+    K: "#3a3a3d",
+    k: "#55555a",
+    E: "#f4f2ec",
+  };
+
+  const SHEEP_BODY_ROWS = [
+    "....oFFo.oFFo.oFFo",
+    "..ooFFFFoFFFFoFFFFoo",
+    ".oFFFFFFFFFFFFFFFFFFo",
+    "ooFFFFFFFFFFFFFFFFFFFo",
+    "oKKoFFFFFFFFFFFFFFFFFFo",
+    "oKEKoFFFFFFFFFFFFFFFFFo",
+    "oKKKoFFFFFFFFFFFFFFFFFo",
+    ".oKKoFFFFFFFFFFFFFFFFo",
+    "..ooFFFffFFFFFfffFFFo",
+    "...oFFFfffFFFffffFFo",
+    "....oFFFFfffffFFFFo",
+    ".....ooooooooooooo",
   ];
 
   // Farmer for the splash intro (facing right), 2 run frames.
@@ -488,61 +674,144 @@
     ],
   ];
 
-  const cowSprites = {};   // { holstein: {left, right}, jersey: {...}, sky: {...} }
+  const sprites = {};   // { holstein: {left, right}, ..., wings: [...], farmer: [...] }
 
   function buildAllSprites() {
-    const defs = {
+    const cowDefs = {
       holstein: HOLSTEIN_PALETTE,
       jersey: JERSEY_PALETTE,
       sky: SKY_PALETTE,
+      golden: GOLDEN_PALETTE,
     };
-    for (const key in defs) {
-      const left = buildSprite(COW_BODY_ROWS, defs[key]);
-      cowSprites[key] = { left, right: flipSprite(left) };
+    for (const key in cowDefs) {
+      const left = buildSprite(COW_BODY_ROWS, cowDefs[key]);
+      sprites[key] = { left, right: flipSprite(left) };
     }
-    cowSprites.wings = WING_ROWS.map(rows => {
+    const chickenL = buildSprite(CHICKEN_BODY_ROWS, CHICKEN_PALETTE);
+    sprites.chicken = { left: chickenL, right: flipSprite(chickenL) };
+    const pigL = buildSprite(PIG_BODY_ROWS, PIG_PALETTE);
+    sprites.pig = { left: pigL, right: flipSprite(pigL) };
+    const sheepL = buildSprite(SHEEP_BODY_ROWS, SHEEP_PALETTE);
+    sprites.sheep = { left: sheepL, right: flipSprite(sheepL) };
+    sprites.wings = WING_ROWS.map(rows => {
       const left = buildSprite(rows, WING_PALETTE);
       return { left, right: flipSprite(left) };
     });
-    cowSprites.farmer = FARMER_FRAMES.map(rows => buildSprite(rows, FARMER_PALETTE));
+    sprites.farmer = FARMER_FRAMES.map(rows => buildSprite(rows, FARMER_PALETTE));
   }
 
-  const COW_BODY_W = 33;
-  const COW_BODY_H = 17;
-  const LEG_TOP = 13;               // sprite row where legs attach
-  const LEG_LENGTH = 8;
-  const COW_W = COW_BODY_W;
-  const COW_H = LEG_TOP + LEG_LENGTH + 2;   // +2 for hooves
+  // ======================= SPECIES =======================
 
-  // Leg anchor x-positions measured on the facing-LEFT sprite.
-  const LEG_ANCHORS_LEFT = [
+  const COW_BODY_W = 33;
+  const COW_LEG_TOP = 13;
+  const COW_LEG_LENGTH = 8;
+  const COW_W = COW_BODY_W;
+  const COW_H = COW_LEG_TOP + COW_LEG_LENGTH + 2;
+
+  // Leg anchor x-positions measured on the facing-LEFT cow sprite.
+  const COW_LEG_ANCHORS = [
     { x: 12, phase: 0 },            // front near
     { x: 15, phase: Math.PI },      // front far
     { x: 24, phase: Math.PI },      // rear far
     { x: 28, phase: 0 },            // rear near
   ];
 
-  function drawCowSprite(g, cow, time) {
+  // Each species: how it looks, where it lives, how it moves, what it's worth.
+  const SPECIES = {
+    holstein: { family: "cow", zone: "ground", w: COW_W, h: COW_H, speed: 12, points: 1, walkSpeed: 7 },
+    jersey:   { family: "cow", zone: "ground", w: COW_W, h: COW_H, speed: 16, points: 2, walkSpeed: 8.5 },
+    sky:      { family: "cow", zone: "sky",    w: COW_W, h: COW_H, speed: 17, points: 2, walkSpeed: 4 },
+    golden:   { family: "cow", zone: "ground", w: COW_W, h: COW_H, speed: 30, points: 10, walkSpeed: 12,
+                bonus: true, ttl: 7 },
+    chicken:  { family: "chicken", zone: "ground", w: 15, h: 15, speed: 26, points: 2, walkSpeed: 16,
+                erratic: true },
+    pig:      { family: "pig", zone: "ground", w: 28, h: 17, speed: 19, points: 3, walkSpeed: 11,
+                burst: true },
+    sheep:    { family: "sheep", zone: "ground", w: 23, h: 17, speed: 8, points: 1, walkSpeed: 5,
+                flock: true },
+  };
+
+  // ======================= LEVELS =======================
+  //
+  // quota: pops needed to clear. interval: base seconds between spawns.
+  // speedMult: multiplies species base speed. mix: weighted species table.
+
+  const LEVELS = [
+    { name: "Fresh Pasture",     quota: 10, interval: 1.7,  speedMult: 0.9,
+      mix: { holstein: 1 } },
+    { name: "The Herd Takes Wing", quota: 12, interval: 1.55, speedMult: 0.95,
+      mix: { holstein: 3, sky: 2 } },
+    { name: "Brown Cow Blitz",   quota: 14, interval: 1.45, speedMult: 1.1,
+      mix: { jersey: 1 } },
+    { name: "Mixed Company",     quota: 16, interval: 1.35, speedMult: 1.1,
+      mix: { holstein: 2, jersey: 2, sky: 1 }, golden: true },
+    { name: "Chicken Run",       quota: 16, interval: 1.0,  speedMult: 1.15,
+      mix: { chicken: 1 }, golden: true },
+    { name: "Barnyard Bedlam",   quota: 18, interval: 1.15, speedMult: 1.2,
+      mix: { holstein: 2, chicken: 2, pig: 1 }, golden: true },
+    { name: "Pig Rush",          quota: 18, interval: 1.0,  speedMult: 1.3,
+      mix: { pig: 1 }, golden: true },
+    { name: "Counting Sheep",    quota: 20, interval: 0.95, speedMult: 1.25,
+      mix: { sheep: 3, jersey: 1 }, night: true, golden: true },
+    { name: "Stampede!",         quota: 22, interval: 0.9,  speedMult: 1.45,
+      mix: { holstein: 2, jersey: 1, sky: 1 }, stampede: true, golden: true },
+    { name: "Total Farmageddon", quota: 25, interval: 0.8,  speedMult: 1.5,
+      mix: { holstein: 1, jersey: 1, sky: 1, chicken: 1, pig: 1, sheep: 1 },
+      stampede: true, golden: true },
+  ];
+
+  // Past the scripted levels, keep generating harder rounds forever.
+  function levelSpec(n) {
+    if (n <= LEVELS.length) return LEVELS[n - 1];
+    const over = n - LEVELS.length;
+    const mixes = [LEVELS[5].mix, LEVELS[6].mix, LEVELS[8].mix, LEVELS[9].mix];
+    return {
+      name: "Farmageddon " + (over + 1),
+      quota: 25 + over * 2,
+      interval: Math.max(0.4, 0.8 * Math.pow(0.95, over)),
+      speedMult: 1.5 * Math.pow(1.06, over),
+      mix: mixes[(over - 1 + mixes.length) % mixes.length],
+      night: n % 4 === 0,
+      stampede: n % 3 === 0,
+      golden: true,
+    };
+  }
+
+  // ======================= SETTINGS =======================
+
+  const DEFAULT_SETTINGS = { herdSpeed: 100, spawnRate: 100, capacity: 30 };
+  let settings = Object.assign({}, DEFAULT_SETTINGS);
+
+  try {
+    const saved = JSON.parse(localStorage.getItem("cowClickerSettings") || "{}");
+    for (const k in DEFAULT_SETTINGS) {
+      if (typeof saved[k] === "number") settings[k] = saved[k];
+    }
+  } catch (e) {}
+
+  function saveSettings() {
+    try { localStorage.setItem("cowClickerSettings", JSON.stringify(settings)); } catch (e) {}
+  }
+
+  // ======================= DRAWING: ANIMALS =======================
+
+  function drawCow(g, cow) {
     const facingLeft = cow.vx < 0;
-    const variant = cowSprites[cow.variant];
+    const variant = sprites[cow.species];
     const sprite = facingLeft ? variant.left : variant.right;
     const x = Math.round(cow.x);
     const bob = Math.round(Math.sin(cow.walkPhase * 2) * 1);
     const y = Math.round(cow.y) + bob;
 
-    const bellyY = y + LEG_TOP;   // where legs start
+    const isSky = cow.species === "sky";
+    const isJersey = cow.species === "jersey";
+    const isGolden = cow.species === "golden";
+    const bellyY = y + COW_LEG_TOP;
 
-    // legs behind body: draw far pair darker first, then body, then near pair
-    const legFar = cow.variant === "jersey" ? "#a5793f" : "#cfc9b6";
-    const legNear = cow.variant === "jersey" ? "#d9a86c" : "#f2efe4";
+    const farCol = isSky ? "#c3c9e6" : isJersey ? "#a5793f" : isGolden ? "#c9a53f" : "#cfc9b6";
+    const nearCol = isSky ? "#f4f4ff" : isJersey ? "#d9a86c" : isGolden ? "#f7dd7a" : "#f2efe4";
     const hoof = "#3d2f1f";
-    const skyLegFar = "#c3c9e6", skyLegNear = "#f4f4ff";
-
-    const isSky = cow.variant === "sky";
-    const farCol = isSky ? skyLegFar : legFar;
-    const nearCol = isSky ? skyLegNear : legNear;
-
-    const legLen = isSky ? 5 : LEG_LENGTH;
+    const legLen = isSky ? 5 : COW_LEG_LENGTH;
 
     function drawLeg(anchorX, phase, near) {
       const swing = Math.sin(cow.walkPhase + phase);
@@ -558,8 +827,8 @@
     }
 
     // far legs
-    drawLeg(LEG_ANCHORS_LEFT[1].x, LEG_ANCHORS_LEFT[1].phase, false);
-    drawLeg(LEG_ANCHORS_LEFT[2].x, LEG_ANCHORS_LEFT[2].phase, false);
+    drawLeg(COW_LEG_ANCHORS[1].x, COW_LEG_ANCHORS[1].phase, false);
+    drawLeg(COW_LEG_ANCHORS[2].x, COW_LEG_ANCHORS[2].phase, false);
 
     // body
     g.drawImage(sprite, x, y);
@@ -567,19 +836,19 @@
     // tail: hangs off the rump, outside the body silhouette, sways gently
     const tailX = facingLeft ? x + COW_BODY_W - 1 : x;
     const tailSway = Math.round(Math.sin(cow.walkPhase * 0.7 + 1) * 1);
-    g.fillStyle = isSky ? "#cfd4ef" : (cow.variant === "jersey" ? "#bd8c52" : "#d6d0bd");
+    g.fillStyle = isSky ? "#cfd4ef" : isJersey ? "#bd8c52" : isGolden ? "#dcb84f" : "#d6d0bd";
     g.fillRect(tailX, y + 5, 1, 5);
     g.fillRect(tailX + tailSway, y + 10, 1, 5);
-    g.fillStyle = "#33302e";
+    g.fillStyle = isGolden ? "#c9962e" : "#33302e";
     g.fillRect(tailX + tailSway, y + 15, 1, 3);
 
     // near legs
-    drawLeg(LEG_ANCHORS_LEFT[0].x, LEG_ANCHORS_LEFT[0].phase, true);
-    drawLeg(LEG_ANCHORS_LEFT[3].x, LEG_ANCHORS_LEFT[3].phase, true);
+    drawLeg(COW_LEG_ANCHORS[0].x, COW_LEG_ANCHORS[0].phase, true);
+    drawLeg(COW_LEG_ANCHORS[3].x, COW_LEG_ANCHORS[3].phase, true);
 
     // wings for sky cows
     if (isSky) {
-      const wing = cowSprites.wings[cow.wingFrame];
+      const wing = sprites.wings[cow.wingFrame];
       const ws = facingLeft ? wing.left : wing.right;
       const wx = facingLeft ? x + 12 : x + COW_BODY_W - 12 - ws.width;
       const wy = y + 7 - ws.height;
@@ -587,32 +856,126 @@
     }
   }
 
+  function drawChicken(g, cow) {
+    const facingLeft = cow.vx < 0;
+    const body = facingLeft ? sprites.chicken.left : sprites.chicken.right;
+    const x = Math.round(cow.x);
+    const hop = Math.round(Math.abs(Math.sin(cow.walkPhase)) * -2);
+    const y = Math.round(cow.y) + hop;
+    const legTop = y + 11;
+
+    // two spindly legs
+    for (let i = 0; i < 2; i++) {
+      const anchor = i === 0 ? 6 : 9;
+      const swing = Math.sin(cow.walkPhase + i * Math.PI);
+      const dx = Math.round(swing * 1.5);
+      const lx = (facingLeft ? x + anchor : x + body.width - anchor - 1) + dx;
+      g.fillStyle = "#e8962e";
+      g.fillRect(lx, legTop, 1, 3);
+      g.fillRect(facingLeft ? lx - 1 : lx, legTop + 3, 2, 1);
+    }
+    g.drawImage(body, x, y);
+  }
+
+  function drawPig(g, cow) {
+    const facingLeft = cow.vx < 0;
+    const body = facingLeft ? sprites.pig.left : sprites.pig.right;
+    const x = Math.round(cow.x);
+    const bob = Math.round(Math.sin(cow.walkPhase * 2) * 1);
+    const y = Math.round(cow.y) + bob;
+    const legTop = y + 11;
+
+    const anchors = [4, 7, 17, 21];
+    for (let i = 0; i < 4; i++) {
+      const swing = Math.sin(cow.walkPhase + (i % 2 === 0 ? 0 : Math.PI));
+      const dx = Math.round(swing * 1.5);
+      const lx = (facingLeft ? x + anchors[i] : x + body.width - anchors[i] - 2) + dx;
+      g.fillStyle = i < 2 === facingLeft ? "#f0aab6" : "#d18a99";
+      g.fillRect(lx, legTop, 2, 4);
+      g.fillStyle = "#8f4a5c";
+      g.fillRect(lx, legTop + 4, 2, 1);
+    }
+    g.drawImage(body, x, y);
+  }
+
+  function drawSheep(g, cow) {
+    const facingLeft = cow.vx < 0;
+    const body = facingLeft ? sprites.sheep.left : sprites.sheep.right;
+    const x = Math.round(cow.x);
+    const bob = Math.round(Math.sin(cow.walkPhase * 2) * 1);
+    const y = Math.round(cow.y) + bob;
+    const legTop = y + 11;
+
+    const anchors = [5, 8, 15, 18];
+    for (let i = 0; i < 4; i++) {
+      const swing = Math.sin(cow.walkPhase + (i % 2 === 0 ? 0 : Math.PI));
+      const dx = Math.round(swing * 1);
+      const lx = (facingLeft ? x + anchors[i] : x + body.width - anchors[i] - 2) + dx;
+      g.fillStyle = "#3a3a3d";
+      g.fillRect(lx, legTop, 2, 5);
+    }
+    g.drawImage(body, x, y);
+  }
+
+  function drawAnimal(g, cow, time) {
+    // golden cows blink before they leave
+    if (cow.species === "golden" && cow.ttl < 1.6 && Math.floor(time * 8) % 2 === 0) return;
+    const family = SPECIES[cow.species].family;
+    if (family === "cow") drawCow(g, cow);
+    else if (family === "chicken") drawChicken(g, cow);
+    else if (family === "pig") drawPig(g, cow);
+    else if (family === "sheep") drawSheep(g, cow);
+  }
+
   // ======================= SCENERY =======================
 
-  let scenery = null;   // prerendered background canvas
+  let scenery = null;        // prerendered background canvas
+  let sceneryNight = false;  // what the current prerender was built for
 
   function buildScenery() {
+    const night = !!(currentLevel && currentLevel.night && gameMode !== "splash");
     const c = document.createElement("canvas");
     c.width = VW; c.height = VH;
     const g = c.getContext("2d");
     const horizonY = Math.round(VH * HORIZON);
 
     // sky bands
-    g.fillStyle = "#63b1f2";
-    g.fillRect(0, 0, VW, horizonY);
-    g.fillStyle = "#7ecbff";
-    g.fillRect(0, Math.round(horizonY * 0.45), VW, horizonY - Math.round(horizonY * 0.45));
-    g.fillStyle = "#9edbff";
-    g.fillRect(0, Math.round(horizonY * 0.78), VW, horizonY - Math.round(horizonY * 0.78));
-
-    // sun
-    g.fillStyle = "#fff3a8";
-    g.fillRect(VW - 34, 8, 12, 12);
-    g.fillStyle = "#ffe36e";
-    g.fillRect(VW - 32, 10, 8, 8);
+    if (night) {
+      g.fillStyle = "#101a3d";
+      g.fillRect(0, 0, VW, horizonY);
+      g.fillStyle = "#1a2a55";
+      g.fillRect(0, Math.round(horizonY * 0.45), VW, horizonY - Math.round(horizonY * 0.45));
+      g.fillStyle = "#25376b";
+      g.fillRect(0, Math.round(horizonY * 0.78), VW, horizonY - Math.round(horizonY * 0.78));
+      // stars
+      for (let i = 0; i < 40; i++) {
+        const sx = (i * 61 + 17) % VW;
+        const sy = (i * 37 + 5) % Math.max(1, horizonY - 8);
+        g.fillStyle = i % 5 === 0 ? "#fff7c0" : "#cfd8ff";
+        g.fillRect(sx, sy, 1, 1);
+      }
+      // moon
+      g.fillStyle = "#f2efd8";
+      g.fillRect(VW - 34, 8, 12, 12);
+      g.fillStyle = "#d8d4b8";
+      g.fillRect(VW - 30, 11, 4, 4);
+      g.fillRect(VW - 26, 15, 2, 2);
+    } else {
+      g.fillStyle = "#63b1f2";
+      g.fillRect(0, 0, VW, horizonY);
+      g.fillStyle = "#7ecbff";
+      g.fillRect(0, Math.round(horizonY * 0.45), VW, horizonY - Math.round(horizonY * 0.45));
+      g.fillStyle = "#9edbff";
+      g.fillRect(0, Math.round(horizonY * 0.78), VW, horizonY - Math.round(horizonY * 0.78));
+      // sun
+      g.fillStyle = "#fff3a8";
+      g.fillRect(VW - 34, 8, 12, 12);
+      g.fillStyle = "#ffe36e";
+      g.fillRect(VW - 32, 10, 8, 8);
+    }
 
     // distant hills
-    g.fillStyle = "#79b356";
+    g.fillStyle = night ? "#2d5537" : "#79b356";
     for (let x = 0; x < VW; x += 46) {
       const hw = 60, hh = 12;
       for (let i = 0; i < hh; i++) {
@@ -622,7 +985,7 @@
     }
 
     // treeline
-    g.fillStyle = "#2e7d32";
+    g.fillStyle = night ? "#14381c" : "#2e7d32";
     for (let x = -4; x < VW; x += 9) {
       const th = 5 + ((x * 7) % 4);
       g.fillRect(x, horizonY - th, 7, th);
@@ -632,34 +995,34 @@
     // barn on the horizon
     const bx = Math.round(VW * 0.12), bw = 30, bh = 16;
     const by = horizonY - bh + 2;
-    g.fillStyle = "#8f2b23";                       // barn body
+    g.fillStyle = night ? "#571b16" : "#8f2b23";
     g.fillRect(bx, by + 6, bw, bh - 6);
-    g.fillStyle = "#a83a30";
+    g.fillStyle = night ? "#6b241d" : "#a83a30";
     g.fillRect(bx, by + 6, bw, 2);
-    g.fillStyle = "#5c5049";                       // roof
+    g.fillStyle = night ? "#3a332e" : "#5c5049";
     g.fillRect(bx - 2, by + 4, bw + 4, 2);
     g.fillRect(bx + 2, by + 2, bw - 4, 2);
     g.fillRect(bx + 6, by, bw - 12, 2);
-    g.fillStyle = "#f2efe4";                       // door + trim
+    g.fillStyle = night ? "#ffe9a3" : "#f2efe4";       // door + windows (lit at night)
     g.fillRect(bx + bw / 2 - 4, by + 9, 8, bh - 9);
-    g.fillStyle = "#6e1d17";
+    g.fillStyle = night ? "#453a1d" : "#6e1d17";
     g.fillRect(bx + bw / 2 - 3, by + 10, 6, bh - 10);
-    g.fillStyle = "#f2efe4";
+    g.fillStyle = night ? "#ffe9a3" : "#f2efe4";
     g.fillRect(bx + 4, by + 8, 4, 4);
     g.fillRect(bx + bw - 8, by + 8, 4, 4);
 
     // field
-    g.fillStyle = "#4caf50";
+    g.fillStyle = night ? "#1e5c2f" : "#4caf50";
     g.fillRect(0, horizonY, VW, VH - horizonY);
 
     // mowed bands for depth
-    g.fillStyle = "#46a349";
+    g.fillStyle = night ? "#1b5329" : "#46a349";
     for (let y = horizonY + 8; y < VH; y += 14) {
       g.fillRect(0, y, VW, 5);
     }
 
     // fence along the horizon
-    g.fillStyle = "#8a6a44";
+    g.fillStyle = night ? "#4d3a26" : "#8a6a44";
     g.fillRect(0, horizonY + 2, VW, 1);
     g.fillRect(0, horizonY + 5, VW, 1);
     for (let x = 3; x < VW; x += 17) {
@@ -672,22 +1035,23 @@
       const gy = horizonY + 10 + ((i * 37 + 5) % (VH - horizonY - 14));
       const kind = (i * 31) % 10;
       if (kind < 6) {
-        g.fillStyle = "#3d9440";
+        g.fillStyle = night ? "#174a24" : "#3d9440";
         g.fillRect(gx, gy, 1, 2);
         g.fillRect(gx + 2, gy - 1, 1, 3);
         g.fillRect(gx + 4, gy, 1, 2);
       } else if (kind < 8) {
-        g.fillStyle = "#fff";
+        g.fillStyle = night ? "#b9c2d8" : "#fff";
         g.fillRect(gx, gy, 2, 2);
-        g.fillStyle = "#ffd54f";
+        g.fillStyle = night ? "#8f96ad" : "#ffd54f";
         g.fillRect(gx, gy, 1, 1);
       } else {
-        g.fillStyle = "#e57373";
+        g.fillStyle = night ? "#8a4a52" : "#e57373";
         g.fillRect(gx, gy, 2, 2);
       }
     }
 
     scenery = c;
+    sceneryNight = night;
   }
 
   // clouds drift, so they are entities rather than baked scenery
@@ -705,17 +1069,17 @@
   }
 
   function drawClouds(g, dt) {
-    g.fillStyle = "#ffffff";
+    const night = sceneryNight;
     for (const cl of clouds) {
       cl.x += cl.speed * dt;
       if (cl.x > VW + 30) cl.x = -30;
       const s = 3 * cl.scale;
       const bx = Math.round(cl.x), by = Math.round(cl.y);
+      g.fillStyle = night ? "#3a4569" : "#ffffff";
       g.fillRect(bx, by, s * 4, s);
       g.fillRect(bx + s, by - s, s * 2, s);
-      g.fillStyle = "#e8f4ff";
+      g.fillStyle = night ? "#2e3757" : "#e8f4ff";
       g.fillRect(bx, by + s, s * 4, Math.max(1, Math.round(s / 3)));
-      g.fillStyle = "#ffffff";
     }
   }
 
@@ -760,13 +1124,14 @@
   let musicTimer = null;
   let musicStep = 0;
   let musicTempo = "none";
+  let musicLevelBoost = 0;   // bpm added per level so later rounds push harder
 
   function startMusic(tempo) {
     if (!soundEnabled || !audioCtx) return;
     if (tempo === musicTempo && musicTimer) return;
     stopMusic();
     musicTempo = tempo;
-    const bpm = tempo === "fast" ? FAST_BPM : NORMAL_BPM;
+    const bpm = (tempo === "fast" ? FAST_BPM : NORMAL_BPM) + musicLevelBoost;
     const stepMs = 60000 / (bpm * 2);
     musicTimer = setInterval(() => {
       if (!audioCtx || !soundEnabled) return;
@@ -820,6 +1185,8 @@
     musicTempo = "none";
   }
 
+  // --- one-shot effects ---
+
   function playPop() {
     if (!soundEnabled || !audioCtx) return;
     const now = audioCtx.currentTime;
@@ -832,6 +1199,93 @@
     gn.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
     o.connect(gn).connect(masterGain);
     o.start(now); o.stop(now + 0.26);
+  }
+
+  function playCluck() {
+    if (!soundEnabled || !audioCtx) return;
+    const now = audioCtx.currentTime;
+    [0, 0.08].forEach((off, i) => {
+      const o = audioCtx.createOscillator();
+      const gn = audioCtx.createGain();
+      o.type = "square";
+      o.frequency.setValueAtTime(i === 0 ? 950 : 700, now + off);
+      o.frequency.exponentialRampToValueAtTime(500, now + off + 0.06);
+      gn.gain.setValueAtTime(0.3, now + off);
+      gn.gain.exponentialRampToValueAtTime(0.001, now + off + 0.07);
+      o.connect(gn).connect(masterGain);
+      o.start(now + off); o.stop(now + off + 0.09);
+    });
+  }
+
+  function playOink() {
+    if (!soundEnabled || !audioCtx) return;
+    const now = audioCtx.currentTime;
+    [0, 0.1].forEach(off => {
+      const o = audioCtx.createOscillator();
+      const gn = audioCtx.createGain();
+      const filt = audioCtx.createBiquadFilter();
+      filt.type = "lowpass";
+      filt.frequency.value = 900;
+      o.type = "sawtooth";
+      o.frequency.setValueAtTime(320, now + off);
+      o.frequency.exponentialRampToValueAtTime(150, now + off + 0.09);
+      gn.gain.setValueAtTime(0.4, now + off);
+      gn.gain.exponentialRampToValueAtTime(0.001, now + off + 0.1);
+      o.connect(filt).connect(gn).connect(masterGain);
+      o.start(now + off); o.stop(now + off + 0.12);
+    });
+  }
+
+  function playBaa() {
+    if (!soundEnabled || !audioCtx) return;
+    const now = audioCtx.currentTime;
+    const o = audioCtx.createOscillator();
+    const gn = audioCtx.createGain();
+    const filt = audioCtx.createBiquadFilter();
+    filt.type = "lowpass";
+    filt.frequency.value = 800;
+    o.type = "sawtooth";
+    // wavering pitch to fake the bleat
+    o.frequency.setValueAtTime(240, now);
+    for (let i = 1; i <= 6; i++) {
+      o.frequency.linearRampToValueAtTime(i % 2 ? 205 : 240, now + i * 0.05);
+    }
+    gn.gain.setValueAtTime(0, now);
+    gn.gain.linearRampToValueAtTime(0.32, now + 0.03);
+    gn.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+    o.connect(filt).connect(gn).connect(masterGain);
+    o.start(now); o.stop(now + 0.4);
+  }
+
+  function playChime() {
+    if (!soundEnabled || !audioCtx) return;
+    const now = audioCtx.currentTime;
+    [880, 1109, 1319].forEach((f, i) => {
+      const o = audioCtx.createOscillator();
+      const gn = audioCtx.createGain();
+      o.type = "triangle";
+      o.frequency.value = f;
+      gn.gain.setValueAtTime(0.25, now + i * 0.06);
+      gn.gain.exponentialRampToValueAtTime(0.001, now + i * 0.06 + 0.25);
+      o.connect(gn).connect(masterGain);
+      o.start(now + i * 0.06); o.stop(now + i * 0.06 + 0.3);
+    });
+  }
+
+  function playLevelClearJingle() {
+    if (!soundEnabled || !audioCtx) return;
+    const now = audioCtx.currentTime;
+    [262, 330, 392, 523].forEach((f, i) => {
+      const o = audioCtx.createOscillator();
+      const gn = audioCtx.createGain();
+      o.type = "square";
+      o.frequency.value = f;
+      const t0 = now + i * 0.13;
+      gn.gain.setValueAtTime(0.3, t0);
+      gn.gain.exponentialRampToValueAtTime(0.001, t0 + (i === 3 ? 0.5 : 0.14));
+      o.connect(gn).connect(masterGain);
+      o.start(t0); o.stop(t0 + (i === 3 ? 0.55 : 0.18));
+    });
   }
 
   let lastMooTime = -10;
@@ -884,20 +1338,41 @@
     });
   }
 
+  function playPopFor(species) {
+    const family = SPECIES[species].family;
+    if (species === "golden") { playChime(); return; }
+    if (family === "chicken") { playCluck(); return; }
+    if (family === "pig") { playOink(); return; }
+    if (family === "sheep") { playBaa(); return; }
+    playPop();
+  }
+
   // ======================= GAME STATE =======================
 
   let gameMode = "splash";        // splash | playing | gameover
-  let cows = [];
+  let levelState = "running";     // running | clear   (within "playing")
+  let paused = false;
+  let level = 1;
+  let currentLevel = levelSpec(1);
+  let levelKills = 0;
+  let levelTime = 0;
+  let cows = [];                  // every animal on the field, whatever the species
   let particles = [];
-  let floaters = [];              // "+1" score popups
+  let floaters = [];              // "+N" score popups
   let score = 0;
   let hiScore = 0;
-  let playTime = 0;
-  let spawnTimer = INITIAL_SPAWN_INTERVAL;
+  let spawnTimer = 1;
+  let stampedeTimer = 0;
+  let stampedeBurst = 0;          // spawns left in the current stampede wave
+
+  const EXPLOSION_DURATION = 0.4;
 
   const scoreValueEl = document.getElementById("score-value");
   const hiscoreValueEl = document.getElementById("hiscore-value");
+  const levelNumEl = document.getElementById("level-num");
+  const quotaProgressEl = document.getElementById("quota-progress");
   const soundToggleBtn = document.getElementById("sound-toggle");
+  const settingsToggleBtn = document.getElementById("settings-toggle");
   const meterShellEl = document.getElementById("meter-shell");
   const meterFillEl = document.getElementById("meter-fill");
   const meterStatusTextEl = document.getElementById("meter-status-text");
@@ -905,8 +1380,22 @@
   const startGameBtn = document.getElementById("start-game");
   const gameOverOverlay = document.getElementById("game-over-overlay");
   const finalScoreEl = document.getElementById("final-score");
+  const finalLevelEl = document.getElementById("final-level");
   const newHiscoreEl = document.getElementById("new-hiscore");
   const playAgainBtn = document.getElementById("play-again");
+  const levelBannerEl = document.getElementById("level-banner");
+  const levelClearOverlay = document.getElementById("level-clear-overlay");
+  const clearTitleEl = document.getElementById("clear-title");
+  const clearBonusEl = document.getElementById("clear-bonus");
+  const nextLevelBtn = document.getElementById("next-level");
+  const settingsOverlay = document.getElementById("settings-overlay");
+  const settingsCloseBtn = document.getElementById("settings-close");
+  const speedSlider = document.getElementById("speed-slider");
+  const spawnSlider = document.getElementById("spawn-slider");
+  const capacitySlider = document.getElementById("capacity-slider");
+  const speedValueEl = document.getElementById("speed-value");
+  const spawnValueEl = document.getElementById("spawn-value");
+  const capacityValueEl = document.getElementById("capacity-value");
 
   try {
     hiScore = parseInt(localStorage.getItem("cowClickerHiScore") || "0", 10) || 0;
@@ -924,58 +1413,153 @@
   }
   updateHiScoreDisplay();
 
-  function currentSpawnInterval() {
-    return Math.max(MIN_SPAWN_INTERVAL, INITIAL_SPAWN_INTERVAL - playTime * SPAWN_RAMP);
+  function updateQuotaDisplay() {
+    levelNumEl.textContent = String(level);
+    quotaProgressEl.textContent = levelKills + "/" + currentLevel.quota;
   }
 
-  function createCow(type) {
+  function capacity() { return settings.capacity; }
+
+  function fieldCount() {
+    let n = 0;
+    for (const c of cows) if (!SPECIES[c.species].bonus && !c.exploding) n++;
+    return n;
+  }
+
+  // ======================= SPAWNING =======================
+
+  function pickSpecies() {
+    const mix = currentLevel.mix;
+    let total = 0;
+    for (const k in mix) total += mix[k];
+    let r = Math.random() * total;
+    for (const k in mix) {
+      r -= mix[k];
+      if (r <= 0) return k;
+    }
+    return Object.keys(mix)[0];
+  }
+
+  function currentSpawnInterval() {
+    // mild in-level ramp on top of the level's base rate
+    const ramp = 1 + Math.min(0.35, levelTime * 0.012);
+    return currentLevel.interval / ramp / (settings.spawnRate / 100);
+  }
+
+  function speedFor(speciesKey) {
+    const sp = SPECIES[speciesKey];
+    const ramp = 1 + Math.min(0.25, levelTime * 0.008);
+    return sp.speed * currentLevel.speedMult * ramp * (settings.herdSpeed / 100) *
+      (0.85 + Math.random() * 0.3);
+  }
+
+  function createAnimal(speciesKey, opts) {
+    const sp = SPECIES[speciesKey];
     const horizonY = VH * HORIZON;
-    const fromLeft = Math.random() < 0.5;
-    const baseSpeed = type === "ground" ? 12 : 17;
-    const difficulty = 1 + (INITIAL_SPAWN_INTERVAL - currentSpawnInterval()) * 1.1;
-    const speed = baseSpeed * difficulty * (0.85 + Math.random() * 0.4);
+    const fromLeft = opts && "fromLeft" in opts ? opts.fromLeft : Math.random() < 0.5;
+    const speed = (opts && opts.speed) || speedFor(speciesKey);
 
     let y;
-    if (type === "ground") {
-      const minY = horizonY + 4;
-      const maxY = VH - COW_H - 4;
-      y = minY + Math.random() * Math.max(4, maxY - minY);
-    } else {
+    if (sp.zone === "sky") {
       const minY = 8;
-      const maxY = Math.max(12, horizonY - COW_H - 6);
+      const maxY = Math.max(12, horizonY - sp.h - 6);
       y = minY + Math.random() * (maxY - minY);
+    } else {
+      const minY = horizonY + 4;
+      const maxY = VH - sp.h - 4;
+      y = minY + Math.random() * Math.max(4, maxY - minY);
     }
+    if (opts && opts.y !== undefined) y = opts.y;
 
     return {
-      type,
-      variant: type === "sky" ? "sky" : (Math.random() < 0.72 ? "holstein" : "jersey"),
-      x: fromLeft ? -COW_W - 2 : VW + 2,
+      species: speciesKey,
+      x: opts && opts.x !== undefined ? opts.x : (fromLeft ? -sp.w - 2 : VW + 2),
       y, baseY: y,
+      w: sp.w, h: sp.h,
       vx: (fromLeft ? 1 : -1) * speed,
       walkPhase: Math.random() * Math.PI * 2,
-      walkSpeed: type === "ground" ? 7 : 4,
+      walkSpeed: sp.walkSpeed,
       wingFrame: 0,
       wingTimer: Math.random() * 0.1,
+      wanderTimer: 0.5 + Math.random(),
+      burstTimer: 2 + Math.random() * 2,
+      burstLeft: 0,
+      ttl: sp.ttl || Infinity,
       exploding: false,
       explosionTime: 0,
     };
   }
 
-  function spawnCows(dt) {
-    if (cows.length >= MAX_COWS) return;
-    spawnTimer -= dt;
-    if (spawnTimer <= 0) {
-      const type = Math.random() < SKY_COW_CHANCE ? "sky" : "ground";
-      cows.push(createCow(type));
-      if (type === "ground" && Math.random() < 0.35) playMoo();
-      spawnTimer += currentSpawnInterval();
+  function spawnAnimal(speciesKey, opts) {
+    cows.push(createAnimal(speciesKey, opts));
+  }
+
+  function spawnFromMix() {
+    // golden cow: rare bonus, one at a time, only on levels that allow it
+    if (currentLevel.golden && Math.random() < 0.05 &&
+        !cows.some(c => c.species === "golden" && !c.exploding)) {
+      spawnAnimal("golden");
+      playChime();
+      return;
+    }
+    const key = pickSpecies();
+    if (SPECIES[key].flock) {
+      // sheep arrive in little flocks
+      const fromLeft = Math.random() < 0.5;
+      const n = 2 + Math.floor(Math.random() * 2);
+      for (let i = 0; i < n; i++) {
+        spawnAnimal(key, {
+          fromLeft,
+          x: (fromLeft ? -SPECIES[key].w - 2 : VW + 2) + (fromLeft ? -1 : 1) * i * 16,
+        });
+      }
+      return;
+    }
+    spawnAnimal(key);
+    if (SPECIES[key].family === "cow" && SPECIES[key].zone === "ground" && Math.random() < 0.3) {
+      playMoo();
     }
   }
 
-  function updateCows(dt) {
+  function updateSpawning(dt) {
+    if (fieldCount() >= capacity()) return;
+
+    // stampede waves on levels that call for them
+    if (currentLevel.stampede) {
+      if (stampedeBurst > 0) {
+        stampedeTimer -= dt;
+        if (stampedeTimer <= 0) {
+          const fromLeft = stampedeFromLeft;
+          spawnAnimal("holstein", { fromLeft, speed: speedFor("holstein") * 1.9 });
+          stampedeBurst--;
+          stampedeTimer = 0.13;
+        }
+      } else {
+        stampedeTimer -= dt;
+        if (stampedeTimer <= 0) {
+          stampedeBurst = 5;
+          stampedeFromLeft = Math.random() < 0.5;
+          stampedeTimer = 0;
+          playMoo();
+        }
+      }
+    }
+
+    spawnTimer -= dt;
+    if (spawnTimer <= 0) {
+      spawnFromMix();
+      spawnTimer += currentSpawnInterval();
+    }
+  }
+  let stampedeFromLeft = true;
+
+  // ======================= UPDATE =======================
+
+  function updateAnimals(dt) {
     const horizonY = VH * HORIZON;
     for (let i = cows.length - 1; i >= 0; i--) {
       const cow = cows[i];
+      const sp = SPECIES[cow.species];
 
       if (cow.exploding) {
         cow.explosionTime += dt;
@@ -983,10 +1567,37 @@
         continue;
       }
 
+      // bonus animals leave on their own
+      if (cow.ttl !== Infinity) {
+        cow.ttl -= dt;
+        if (cow.ttl <= 0) { cows.splice(i, 1); continue; }
+      }
+
+      // chickens dart around; pigs put on bursts of speed
+      if (sp.erratic) {
+        cow.wanderTimer -= dt;
+        if (cow.wanderTimer <= 0) {
+          cow.wanderTimer = 0.4 + Math.random() * 1.1;
+          const dir = Math.random() < 0.3 ? -Math.sign(cow.vx) : Math.sign(cow.vx);
+          cow.vx = dir * Math.abs(cow.vx) * (0.7 + Math.random() * 0.6);
+        }
+      }
+      if (sp.burst) {
+        cow.burstTimer -= dt;
+        if (cow.burstLeft > 0) {
+          cow.burstLeft -= dt;
+          if (cow.burstLeft <= 0) cow.vx /= 2.2;
+        } else if (cow.burstTimer <= 0) {
+          cow.burstTimer = 2 + Math.random() * 2.5;
+          cow.burstLeft = 0.6;
+          cow.vx *= 2.2;
+        }
+      }
+
       cow.x += cow.vx * dt;
       cow.walkPhase += cow.walkSpeed * dt;
 
-      if (cow.type === "sky") {
+      if (sp.zone === "sky") {
         cow.y = cow.baseY + Math.sin(cow.walkPhase) * 3;
         cow.wingTimer += dt;
         if (cow.wingTimer > 0.1) {
@@ -995,20 +1606,32 @@
         }
       } else {
         if (cow.y < horizonY + 2) cow.y = horizonY + 2;
-        if (cow.y > VH - COW_H - 2) cow.y = VH - COW_H - 2;
+        if (cow.y > VH - cow.h - 2) cow.y = VH - cow.h - 2;
       }
 
       // wrap around the screen
-      if (cow.x < -COW_W - 4) cow.x = VW + 2;
-      else if (cow.x > VW + 4) cow.x = -COW_W - 2;
+      if (cow.x < -cow.w - 4) cow.x = VW + 2;
+      else if (cow.x > VW + 4) cow.x = -cow.w - 2;
+
+      // golden cow sparkle trail
+      if (cow.species === "golden" && Math.random() < 0.35) {
+        particles.push({
+          x: cow.x + Math.random() * cow.w,
+          y: cow.y + Math.random() * cow.h,
+          vx: (Math.random() - 0.5) * 6,
+          vy: -8 - Math.random() * 8,
+          life: 0.35, age: 0, size: 1,
+          color: Math.random() < 0.5 ? "#fff7c0" : "#ffe36e",
+        });
+      }
     }
   }
 
-  function explodeCow(cow) {
+  function explodeAnimal(cow, silent) {
     cow.exploding = true;
     cow.explosionTime = 0;
-    const cx = cow.x + COW_W / 2;
-    const cy = cow.y + COW_H / 2;
+    const cx = cow.x + cow.w / 2;
+    const cy = cow.y + cow.h / 2;
     const colors = ["#ff5533", "#ff9900", "#ffee55", "#ffffff"];
     for (let i = 0; i < 14; i++) {
       const ang = Math.random() * Math.PI * 2;
@@ -1023,7 +1646,10 @@
         color: colors[i % colors.length],
       });
     }
-    floaters.push({ x: cx, y: cow.y - 2, age: 0, life: 0.7, text: "+1" });
+    if (!silent) {
+      const pts = SPECIES[cow.species].points;
+      floaters.push({ x: cx, y: cow.y - 2, age: 0, life: 0.7, text: "+" + pts });
+    }
   }
 
   function updateParticles(dt) {
@@ -1045,8 +1671,8 @@
 
   function drawExplosion(g, cow) {
     const t = cow.explosionTime / EXPLOSION_DURATION;
-    const cx = Math.round(cow.x + COW_W / 2);
-    const cy = Math.round(cow.y + COW_H / 2);
+    const cx = Math.round(cow.x + cow.w / 2);
+    const cy = Math.round(cow.y + cow.h / 2);
     const r = Math.round(4 + t * 12);
     const color = t < 0.33 ? "#ff5533" : (t < 0.66 ? "#ff9900" : "#ffee55");
     g.fillStyle = color;
@@ -1094,7 +1720,7 @@
   }
 
   const introCow = {
-    x: 0, y: 0, vx: 1, variant: "holstein",
+    x: 0, y: 0, vx: 1, species: "holstein",
     walkPhase: 0, walkSpeed: 10, wingFrame: 0,
   };
 
@@ -1103,34 +1729,33 @@
     introCow.x = intro.cowX;
     introCow.y = groundY - COW_H + 6;
     introCow.walkPhase += 0.35;
-    drawCowSprite(g, introCow, 0);
-    const farmer = cowSprites.farmer[intro.frame];
+    drawCow(g, introCow);
+    const farmer = sprites.farmer[intro.frame];
     g.drawImage(farmer, Math.round(intro.farmerX), groundY - farmer.height + 5);
   }
 
   // ======================= INPUT =======================
 
-  function canvasToBuffer(e) {
-    const rect = screenCanvas.getBoundingClientRect();
-    return {
-      x: (e.clientX - rect.left) / pixelScale,
-      y: (e.clientY - rect.top) / pixelScale,
-    };
-  }
-
   screenCanvas.addEventListener("pointerdown", e => {
     wakeAudio();
-    if (gameMode !== "playing") return;
-    const { x, y } = canvasToBuffer(e);
+    if (gameMode !== "playing" || levelState !== "running" || paused) return;
+
+    const rect = screenCanvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / pixelScale;
+    const y = (e.clientY - rect.top) / pixelScale;
+
     const PAD = 2;
     for (let i = cows.length - 1; i >= 0; i--) {
       const cow = cows[i];
       if (cow.exploding) continue;
-      if (x >= cow.x - PAD && x <= cow.x + COW_W + PAD &&
-          y >= cow.y - PAD && y <= cow.y + COW_H + PAD) {
-        explodeCow(cow);
-        setScore(score + 1);
-        playPop();
+      if (x >= cow.x - PAD && x <= cow.x + cow.w + PAD &&
+          y >= cow.y - PAD && y <= cow.y + cow.h + PAD) {
+        explodeAnimal(cow, false);
+        setScore(score + SPECIES[cow.species].points);
+        levelKills++;
+        updateQuotaDisplay();
+        playPopFor(cow.species);
+        if (levelKills >= currentLevel.quota) levelClear();
         break;
       }
     }
@@ -1143,7 +1768,52 @@
     initAudio();
     if (masterGain) masterGain.gain.value = soundEnabled ? 0.45 : 0;
     if (!soundEnabled) stopMusic();
-    else if (gameMode === "playing") startMusic(cows.length / MAX_COWS >= 0.8 ? "fast" : "normal");
+    else if (gameMode === "playing" && levelState === "running") {
+      startMusic(fieldCount() / capacity() >= 0.8 ? "fast" : "normal");
+    }
+  });
+
+  // --- settings panel ---
+
+  function refreshSettingsUI() {
+    speedSlider.value = settings.herdSpeed;
+    spawnSlider.value = settings.spawnRate;
+    capacitySlider.value = settings.capacity;
+    speedValueEl.textContent = settings.herdSpeed + "%";
+    spawnValueEl.textContent = settings.spawnRate + "%";
+    capacityValueEl.textContent = settings.capacity;
+  }
+
+  function openSettings() {
+    refreshSettingsUI();
+    settingsOverlay.classList.add("visible");
+    paused = true;
+  }
+
+  function closeSettings() {
+    settingsOverlay.classList.remove("visible");
+    paused = false;
+    saveSettings();
+  }
+
+  settingsToggleBtn.addEventListener("click", e => {
+    e.stopPropagation();
+    if (settingsOverlay.classList.contains("visible")) closeSettings();
+    else openSettings();
+  });
+  settingsCloseBtn.addEventListener("click", closeSettings);
+
+  speedSlider.addEventListener("input", () => {
+    settings.herdSpeed = parseInt(speedSlider.value, 10);
+    speedValueEl.textContent = settings.herdSpeed + "%";
+  });
+  spawnSlider.addEventListener("input", () => {
+    settings.spawnRate = parseInt(spawnSlider.value, 10);
+    spawnValueEl.textContent = settings.spawnRate + "%";
+  });
+  capacitySlider.addEventListener("input", () => {
+    settings.capacity = parseInt(capacitySlider.value, 10);
+    capacityValueEl.textContent = settings.capacity;
   });
 
   startGameBtn.addEventListener("click", e => {
@@ -1159,20 +1829,65 @@
     startGame();
   });
 
+  nextLevelBtn.addEventListener("click", e => {
+    e.stopPropagation();
+    wakeAudio();
+    levelClearOverlay.classList.remove("visible");
+    startLevel(level + 1);
+  });
+
   // ======================= GAME FLOW =======================
 
-  function startGame() {
+  function showLevelBanner() {
+    levelBannerEl.innerHTML =
+      "Level " + level + '<span class="banner-sub">' + currentLevel.name + "</span>";
+    levelBannerEl.classList.remove("show");
+    void levelBannerEl.offsetWidth;   // restart the CSS animation
+    levelBannerEl.classList.add("show");
+  }
+
+  function startLevel(n) {
+    level = n;
+    currentLevel = levelSpec(n);
+    levelKills = 0;
+    levelTime = 0;
     cows = [];
     particles = [];
     floaters = [];
+    spawnTimer = 0.8;
+    stampedeTimer = 5 + Math.random() * 3;
+    stampedeBurst = 0;
+    levelState = "running";
+    musicLevelBoost = Math.min(24, (n - 1) * 2);
+    if (sceneryNight !== !!currentLevel.night) buildScenery();
+    updateQuotaDisplay();
+    showLevelBanner();
+    stopMusic();
+    startMusic("normal");
+  }
+
+  function startGame() {
     setScore(0);
-    playTime = 0;
-    spawnTimer = INITIAL_SPAWN_INTERVAL * 0.5;
     gameMode = "playing";
     gameOverOverlay.classList.remove("visible");
     newHiscoreEl.style.display = "none";
     playMoo();
-    startMusic("normal");
+    startLevel(1);
+  }
+
+  function levelClear() {
+    levelState = "clear";
+    stopMusic();
+    playLevelClearJingle();
+    // remaining animals poof, no points
+    for (const cow of cows) {
+      if (!cow.exploding) explodeAnimal(cow, true);
+    }
+    const bonus = level * 5;
+    setScore(score + bonus);
+    clearTitleEl.textContent = "Level " + level + " Clear!";
+    clearBonusEl.textContent = "Bonus +" + String(bonus).padStart(2, "0");
+    setTimeout(() => levelClearOverlay.classList.add("visible"), 500);
   }
 
   function triggerGameOver() {
@@ -1180,6 +1895,7 @@
     stopMusic();
     playSadTrombone();
     finalScoreEl.textContent = "Final Score " + fmt(score);
+    finalLevelEl.textContent = "You made it to Level " + level;
     if (score > hiScore) {
       hiScore = score;
       try { localStorage.setItem("cowClickerHiScore", String(hiScore)); } catch (e) {}
@@ -1190,7 +1906,7 @@
   }
 
   function updateMeter() {
-    const density = cows.length / MAX_COWS;
+    const density = fieldCount() / capacity();
     meterFillEl.style.height = (Math.min(1, density) * 100).toFixed(1) + "%";
     meterShellEl.classList.remove("safe", "warn", "danger");
     if (density < 0.5) {
@@ -1203,7 +1919,8 @@
       meterShellEl.classList.add("danger");
       meterStatusTextEl.textContent = "Moo!";
     }
-    if (gameMode === "playing" && audioCtx && audioCtx.state === "running" && soundEnabled) {
+    if (gameMode === "playing" && levelState === "running" && !paused &&
+        audioCtx && audioCtx.state === "running" && soundEnabled) {
       startMusic(density >= 0.8 ? "fast" : "normal");
     }
   }
@@ -1217,6 +1934,7 @@
     let dt = (timestamp - lastTimestamp) / 1000;
     lastTimestamp = timestamp;
     if (dt > 0.1) dt = 0.1;    // tab-switch protection
+    if (dt < 0) dt = 0;        // never run time backwards
 
     // recover from booting/resizing while the window had no size
     if (rootEl.clientWidth !== sizedW || rootEl.clientHeight !== sizedH) resize();
@@ -1225,36 +1943,38 @@
       return;
     }
 
-    if (gameMode === "splash") {
-      updateIntro(dt);
-    } else if (gameMode === "playing") {
-      playTime += dt;
-      spawnCows(dt);
-      updateCows(dt);
-      if (cows.length >= MAX_COWS) triggerGameOver();
-    } else {
-      updateCows(dt);   // let survivors mill around behind the game-over panel
+    if (!paused) {
+      if (gameMode === "splash") {
+        updateIntro(dt);
+      } else if (gameMode === "playing" && levelState === "running") {
+        levelTime += dt;
+        updateSpawning(dt);
+        updateAnimals(dt);
+        if (fieldCount() >= capacity()) triggerGameOver();
+      } else {
+        updateAnimals(dt);   // survivors mill around behind overlays
+      }
+      updateParticles(dt);
     }
-    updateParticles(dt);
 
     // ---- draw ----
     ctx.clearRect(0, 0, VW, VH);
     ctx.drawImage(scenery, 0, 0);
-    drawClouds(ctx, dt);
+    drawClouds(ctx, paused ? 0 : dt);
 
     if (gameMode === "splash") {
       drawIntro(ctx);
     } else {
-      const skyCows = cows.filter(c => c.type === "sky");
-      const groundCows = cows.filter(c => c.type === "ground")
-        .sort((a, b) => a.y - b.y);
-      for (const cow of skyCows) {
+      const skyAnimals = cows.filter(c => SPECIES[c.species].zone === "sky");
+      const groundAnimals = cows.filter(c => SPECIES[c.species].zone === "ground")
+        .sort((a, b) => (a.y + a.h) - (b.y + b.h));
+      for (const cow of skyAnimals) {
         if (cow.exploding) drawExplosion(ctx, cow);
-        else drawCowSprite(ctx, cow, playTime);
+        else drawAnimal(ctx, cow, levelTime);
       }
-      for (const cow of groundCows) {
+      for (const cow of groundAnimals) {
         if (cow.exploding) drawExplosion(ctx, cow);
-        else drawCowSprite(ctx, cow, playTime);
+        else drawAnimal(ctx, cow, levelTime);
       }
       drawParticles(ctx);
     }
@@ -1269,27 +1989,48 @@
 
   // ======================= BOOT =======================
 
-  // Debug hook for automated testing: advance the simulation by ms and redraw.
-  window.__cowTick = ms => frame((lastTimestamp || performance.now()) + ms);
+  // Debug hooks for automated testing: advance the simulation by ms and redraw.
+  // Resync the clock afterwards so real animation frames don't see a timestamp
+  // from the simulated future (negative dt).
+  window.__cowTick = ms => {
+    frame((lastTimestamp || performance.now()) + ms);
+    lastTimestamp = performance.now();
+  };
   window.__cowState = () => ({
-    mode: gameMode, score, VW, VH, pixelScale,
+    mode: gameMode, levelState, paused, level, levelKills,
+    quota: currentLevel.quota, capacity: capacity(), score, VW, VH, pixelScale,
+    night: sceneryNight,
     cows: cows.map(c => ({
-      x: Math.round(c.x), y: Math.round(c.y),
-      type: c.type, variant: c.variant, exploding: c.exploding,
+      x: Math.round(c.x), y: Math.round(c.y), w: c.w, h: c.h,
+      species: c.species, exploding: c.exploding,
     })),
   });
+  window.__cowSetLevel = n => {
+    if (gameMode !== "playing") {
+      splashOverlay.classList.add("hidden");
+      gameOverOverlay.classList.remove("visible");
+      setScore(0);
+      gameMode = "playing";
+    }
+    levelClearOverlay.classList.remove("visible");
+    startLevel(n);
+  };
 
   buildAllSprites();
   resize();
   initClouds();
 
-  // Sprite gallery for art iteration: open index.html?gallery
+  // Sprite gallery for art iteration: open index.html?gallery (&scale=N)
   if (location.search.includes("gallery")) {
-    document.querySelectorAll(".overlay, .hud").forEach(el => el.classList.add("hidden"));
+    document.querySelectorAll(".overlay, .hud, #level-banner")
+      .forEach(el => el.classList.add("hidden"));
     const gallery = [
-      { variant: "holstein", vx: -1 }, { variant: "holstein", vx: 1 },
-      { variant: "jersey", vx: -1 },   { variant: "sky", vx: -1 },
-      { variant: "sky", vx: -1, wf: 1 }, { variant: "sky", vx: -1, wf: 2 },
+      { species: "holstein", vx: -1 }, { species: "holstein", vx: 1 },
+      { species: "jersey", vx: -1 },   { species: "golden", vx: -1 },
+      { species: "sky", vx: -1, wf: 0 }, { species: "sky", vx: -1, wf: 1 },
+      { species: "sky", vx: -1, wf: 2 }, { species: "chicken", vx: -1 },
+      { species: "chicken", vx: 1 },   { species: "pig", vx: -1 },
+      { species: "sheep", vx: -1 },    { species: "pig", vx: 1 },
     ];
     let phase = 0, wingT = 0, wingF = 0;
     (function galleryFrame() {
@@ -1303,20 +2044,20 @@
       screenCtx.setTransform(SC, 0, 0, SC, 0, 0);
       gallery.forEach((spec, i) => {
         const fake = {
-          variant: spec.variant, vx: spec.vx,
-          x: 6 + (i % 3) * 44, y: 8 + Math.floor(i / 3) * 40,
-          walkPhase: phase,
+          species: spec.species, vx: spec.vx,
+          x: 6 + (i % 4) * 42, y: 8 + Math.floor(i / 4) * 36,
+          w: SPECIES[spec.species].w, h: SPECIES[spec.species].h,
+          walkPhase: phase, ttl: Infinity,
           wingFrame: spec.wf !== undefined ? spec.wf : wingF,
         };
-        drawCowSprite(screenCtx, fake, 0);
+        drawAnimal(screenCtx, fake, 0);
       });
-      cowSprites.farmer.forEach((f, i) => {
-        screenCtx.drawImage(f, 6 + i * 16, 90);
+      sprites.farmer.forEach((f, i) => {
+        screenCtx.drawImage(f, 6 + i * 18, 118);
       });
       screenCtx.setTransform(1, 0, 0, 1, 0, 0);
       requestAnimationFrame(galleryFrame);
     })();
-    window.__galleryTick = () => {};   // marker so tests know gallery is active
     return;
   }
 
