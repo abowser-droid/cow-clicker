@@ -82,10 +82,19 @@ name, quota (pops to clear), base spawn interval, speed multiplier, weighted spe
 periodic burst-spawn timer, `golden` allows the 5%-per-spawn bonus cow) — and
 `levelSpec(n)` extends past them procedurally forever (rotating late-game mixes,
 shrinking interval, growing speed and quota). Within a level, `levelTime` adds a
-mild ramp on top. `levelState` (`running`/`clear`) is a sub-state of
-`gameMode === "playing"`: clearing quota poofs the field, shows the interstitial,
-and the Next Level button calls `startLevel(n+1)`; the overflow lose condition
-(`fieldCount() >= capacity()`) checks non-bonus animals only.
+mild ramp on top. `levelState` (`march`/`running`/`clear`) is a sub-state of
+`gameMode === "playing"`: clearing quota poofs the field and shows the
+interstitial, which auto-advances via a 4-second real-time countdown on the Next
+Level button (`advanceLevel()`); the overflow lose condition
+(`fieldCount() >= capacity()`) checks non-bonus animals only. A level with
+`funeralMarch: true` (Total Farmageddon) starts in the `march` state — no spawns,
+clicks ignored — while `playFuneralMarch()` plays a four-voice chiptune of
+Chopin's Marche funèbre (~15s, schedules all WebAudio notes up front and returns
+the duration); `endMarch()` then flips to `running`. All of these use real-time
+timers, so `startLevel()` cancels any pending march/countdown timers, and tests
+can call `window.__cowSkipMarch()`. Counting Sheep is deliberately tuned gentler
+than its neighbors: sheep flock-spawn 2–3 per event, so its effective arrival
+rate is ~2.5x its listed interval.
 
 **User difficulty settings multiply on top of level specs.** The `settings` object
 (herdSpeed %, spawnRate %, capacity, quotaScale %) is edited by four sliders in the
