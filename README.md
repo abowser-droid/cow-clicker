@@ -15,7 +15,8 @@ each level and from level to level.
 The first ten levels are scripted: ground Holsteins, then flying cows, then faster
 brown Jerseys, then chickens (small and erratic), pigs (speed bursts), and sheep
 (arrive in flocks) — some levels single-species, some mixed. Surprises along the
-way: a rare golden cow worth +10 that leaves on its own, stampede waves, a starlit
+way: a rare golden cow worth +10 that leaves on its own, stampede waves (announced
+by a rumble and a dust cloud on the edge they'll charge in from), a starlit
 night level, and a four-voice chiptune of Chopin's Marche funèbre (Piano Sonata
 No. 2, Op. 35, third movement) that plays before Total Farmageddon begins. Past
 level 10 the game generates ever-harder rounds forever. Points vary by species;

@@ -76,6 +76,17 @@ wander timer), `burst` (pigs multiply their speed briefly on a timer), `flock`
 capacity and despawns after 7s, blinking near the end). `updateAnimals()` reads
 these flags; there are no per-species update functions.
 
+**Tune levels against the simulated-player harness, not by eye.** Spawn rate is
+the dominant difficulty term, and it is easy to set a level nobody can clear: a
+level is only winnable if its arrival rate stays under a human tap rate (~2–3
+taps/sec). Drive `__cowTick` + synthetic pointerdowns at a fixed cadence (350ms =
+a good player, 450ms = an average one) and check every level still clears; the
+target curve is good-clears/average-dies on hard levels, both-clear on the
+breathers (5 and 8). Two traps this caught: sheep `flock` 2–3 per spawn event, so
+a mix containing sheep arrives far faster than its `interval` implies (Total
+Farmageddon needs a much gentler interval than its neighbors), and stampede waves
+add ~5 cows on top of the base rate, so stampede levels also need slack.
+
 **The level system drives difficulty.** `LEVELS` is an array of ten scripted specs —
 name, quota (pops to clear), base spawn interval, speed multiplier, weighted species
 `mix`, and flags (`night` rebuilds the scenery in a dark palette, `stampede` runs a

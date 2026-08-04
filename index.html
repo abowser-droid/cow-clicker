@@ -763,15 +763,19 @@
       mix: { holstein: 2, jersey: 2, sky: 1 }, golden: true },
     { name: "Chicken Run",       quota: 48, interval: 0.33, speedMult: 1.3,
       mix: { chicken: 1 }, golden: true },
-    { name: "Barnyard Bedlam",   quota: 72, interval: 0.29, speedMult: 1.75,
+    { name: "Barnyard Bedlam",   quota: 64, interval: 0.32, speedMult: 1.75,
       mix: { holstein: 2, chicken: 2, pig: 1 }, golden: true },
-    { name: "Pig Rush",          quota: 72, interval: 0.25, speedMult: 1.85,
+    { name: "Pig Rush",          quota: 64, interval: 0.31, speedMult: 1.85,
       mix: { pig: 1 }, golden: true },
     { name: "Counting Sheep",    quota: 40, interval: 1.0,  speedMult: 1.3,
       mix: { sheep: 3, jersey: 1 }, night: true, golden: true },
-    { name: "Stampede!",         quota: 88, interval: 0.22, speedMult: 2.1,
+    // Stampede levels carry ~5 extra cows per wave, so their base interval is
+    // deliberately gentler than the levels before them.
+    { name: "Stampede!",         quota: 76, interval: 0.40, speedMult: 1.9,
       mix: { holstein: 2, jersey: 1, sky: 1 }, stampede: true, golden: true },
-    { name: "Total Farmageddon", quota: 100, interval: 0.2, speedMult: 2.15,
+    // Gentler interval again because this mix includes sheep, and sheep arrive
+    // 2-3 per spawn event, so the real arrival rate runs well above the number.
+    { name: "Total Farmageddon", quota: 80, interval: 0.48, speedMult: 2.0,
       mix: { holstein: 1, jersey: 1, sky: 1, chicken: 1, pig: 1, sheep: 1 },
       stampede: true, golden: true, funeralMarch: true },
   ];
@@ -783,9 +787,9 @@
     const mixes = [LEVELS[5].mix, LEVELS[6].mix, LEVELS[8].mix, LEVELS[9].mix];
     return {
       name: "Farmageddon " + (over + 1),
-      quota: 100 + over * 8,
-      interval: Math.max(0.12, 0.2 * Math.pow(0.95, over)),
-      speedMult: 2.15 * Math.pow(1.06, over),
+      quota: 88 + over * 6,
+      interval: Math.max(0.22, 0.42 * Math.pow(0.97, over)),
+      speedMult: 2.0 * Math.pow(1.04, over),
       mix: mixes[(over - 1 + mixes.length) % mixes.length],
       night: n % 4 === 0,
       stampede: n % 3 === 0,
@@ -1498,6 +1502,29 @@
     return 4 * 16 * step + 0.3;
   }
 
+  // swelling low rumble: hooves approaching before a stampede wave lands
+  function playRumble() {
+    if (!soundEnabled || !audioCtx) return;
+    const now = audioCtx.currentTime;
+    const dur = STAMPEDE_WARN_TIME;
+    const bufSize = Math.floor(audioCtx.sampleRate * dur);
+    const nb = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
+    const data = nb.getChannelData(0);
+    for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+    const src = audioCtx.createBufferSource();
+    src.buffer = nb;
+    const filt = audioCtx.createBiquadFilter();
+    filt.type = "lowpass";
+    filt.frequency.setValueAtTime(90, now);
+    filt.frequency.linearRampToValueAtTime(260, now + dur);
+    const gn = audioCtx.createGain();
+    gn.gain.setValueAtTime(0.02, now);
+    gn.gain.linearRampToValueAtTime(0.42, now + dur * 0.85);
+    gn.gain.exponentialRampToValueAtTime(0.001, now + dur);
+    src.connect(filt).connect(gn).connect(masterGain);
+    src.start(now); src.stop(now + dur);
+  }
+
   let lastMooTime = -10;
   function playMoo() {
     if (!soundEnabled || !audioCtx) return;
@@ -1574,6 +1601,11 @@
   let spawnTimer = 1;
   let stampedeTimer = 0;
   let stampedeBurst = 0;          // spawns left in the current stampede wave
+  let stampedeWarn = 0;           // seconds of telegraph left before a wave lands
+  let stampedeFromLeft = true;
+  const STAMPEDE_SIZE = 5;
+  const STAMPEDE_WARN_TIME = 1.3;
+  function stampedeCooldown() { return 7 + Math.random() * 4; }
 
   const EXPLOSION_DURATION = 0.4;
 
@@ -1746,18 +1778,30 @@
       if (stampedeBurst > 0) {
         stampedeTimer -= dt;
         if (stampedeTimer <= 0) {
-          const fromLeft = stampedeFromLeft;
-          spawnAnimal("holstein", { fromLeft, speed: speedFor("holstein") * 1.9 });
+          spawnAnimal("holstein", {
+            fromLeft: stampedeFromLeft,
+            speed: speedFor("holstein") * 1.9,
+          });
           stampedeBurst--;
-          stampedeTimer = 0.13;
+          // on the last cow of the wave, start the long wait for the next one.
+          // (Leaving the short 0.13s gap here made waves repeat forever.)
+          stampedeTimer = stampedeBurst > 0 ? 0.13 : stampedeCooldown();
+        }
+      } else if (stampedeWarn > 0) {
+        stampedeWarn -= dt;
+        if (stampedeWarn <= 0) {
+          stampedeWarn = 0;
+          stampedeBurst = STAMPEDE_SIZE;
+          stampedeTimer = 0;
+          playMoo();
         }
       } else {
         stampedeTimer -= dt;
         if (stampedeTimer <= 0) {
-          stampedeBurst = 5;
+          // telegraph the wave so it isn't a sudden ambush
           stampedeFromLeft = Math.random() < 0.5;
-          stampedeTimer = 0;
-          playMoo();
+          stampedeWarn = STAMPEDE_WARN_TIME;
+          playRumble();
         }
       }
     }
@@ -1768,7 +1812,6 @@
       spawnTimer += currentSpawnInterval();
     }
   }
-  let stampedeFromLeft = true;
 
   // ======================= UPDATE =======================
 
@@ -1916,6 +1959,48 @@
       g.fillStyle = "#ffee55";
       g.fillText(f.text, Math.round(f.x), Math.round(f.y));
     }
+  }
+
+  // Dust, chevrons and a warning word on the edge the wave will come from.
+  function drawStampedeWarning(g) {
+    if (stampedeWarn <= 0) return;
+    const horizonY = VH * HORIZON;
+    const progress = 1 - stampedeWarn / STAMPEDE_WARN_TIME;
+    const flash = Math.floor(levelTime * 8) % 2 === 0;
+    const edgeX = stampedeFromLeft ? 0 : VW;
+    const dir = stampedeFromLeft ? 1 : -1;
+
+    // dust rolling in from the edge, creeping further on as the wave nears
+    const rand = mulberry32(90210);
+    for (let i = 0; i < 30; i++) {
+      const py = horizonY + 4 + rand() * (VH - horizonY - 8);
+      const px = edgeX + dir * (rand() * 16 + progress * 26);
+      const s = 2 + Math.floor(rand() * 3);
+      g.fillStyle = rand() < 0.5
+        ? "rgba(214,198,162,0.75)" : "rgba(176,158,124,0.6)";
+      g.fillRect(Math.round(px), Math.round(py), s, s);
+    }
+
+    // flashing chevrons pointing the way in
+    if (flash) {
+      g.fillStyle = "#ffe36e";
+      const cy = Math.round(horizonY + (VH - horizonY) / 2);
+      for (let c = 0; c < 3; c++) {
+        const cx = edgeX + dir * (5 + c * 8);
+        for (let k = 0; k < 5; k++) {
+          g.fillRect(Math.round(cx + dir * k), cy - 5 + k, 2, 2);
+          g.fillRect(Math.round(cx + dir * k), cy + 5 - k, 2, 2);
+        }
+      }
+    }
+
+    g.font = "bold 8px 'Courier New', monospace";
+    g.textAlign = "center";
+    const ty = Math.round(horizonY + 13);
+    g.fillStyle = "#241f1c";
+    g.fillText("STAMPEDE!", Math.round(VW / 2) + 1, ty + 1);
+    g.fillStyle = flash ? "#ff5544" : "#ffe36e";
+    g.fillText("STAMPEDE!", Math.round(VW / 2), ty);
   }
 
   // ======================= INTRO SCENE =======================
@@ -2138,6 +2223,7 @@
     spawnTimer = 0.8;
     stampedeTimer = 5 + Math.random() * 3;
     stampedeBurst = 0;
+    stampedeWarn = 0;
     musicLevelBoost = Math.min(24, (n - 1) * 2);
     if (sceneryNight !== !!currentLevel.night) buildScenery();
     updateQuotaDisplay();
@@ -2277,6 +2363,9 @@
         else drawAnimal(ctx, cow, levelTime);
       }
       drawParticles(ctx);
+      if (gameMode === "playing" && levelState === "running") {
+        drawStampedeWarning(ctx);
+      }
 
       // red zone: the whole scene pulses red along with the alarm
       if (gameMode === "playing" && levelState === "running" &&
@@ -2307,7 +2396,7 @@
   window.__cowState = () => ({
     mode: gameMode, levelState, paused, level, levelKills,
     quota: quotaFor(), capacity: capacity(), score, VW, VH, pixelScale,
-    night: sceneryNight, musicMode,
+    night: sceneryNight, musicMode, stampedeWarn, stampedeBurst,
     cows: cows.map(c => ({
       x: Math.round(c.x), y: Math.round(c.y), w: c.w, h: c.h,
       species: c.species, exploding: c.exploding,
