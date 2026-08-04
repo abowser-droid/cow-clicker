@@ -350,7 +350,11 @@
         <label>Field Capacity <span class="slider-value" id="capacity-value">30</span></label>
         <input type="range" id="capacity-slider" min="15" max="50" step="1" value="30">
       </div>
-      <div id="settings-hint">Capacity is how many animals fit on the field before the herd wins. Lower = harder.</div>
+      <div class="slider-row">
+        <label>Level Quota <span class="slider-value" id="quota-value">100%</span></label>
+        <input type="range" id="quota-slider" min="50" max="200" step="10" value="100">
+      </div>
+      <div id="settings-hint">Capacity is how many animals fit on the field before the herd wins (lower = harder). Quota scales how many pops each level takes to clear.</div>
       <button id="settings-close" class="pixel-btn">Close</button>
     </div>
   </div>
@@ -737,25 +741,25 @@
   // speedMult: multiplies species base speed. mix: weighted species table.
 
   const LEVELS = [
-    { name: "Fresh Pasture",     quota: 10, interval: 1.7,  speedMult: 0.9,
+    { name: "Fresh Pasture",     quota: 20, interval: 0.85, speedMult: 1.1,
       mix: { holstein: 1 } },
-    { name: "The Herd Takes Wing", quota: 12, interval: 1.55, speedMult: 0.95,
+    { name: "The Herd Takes Wing", quota: 24, interval: 0.78, speedMult: 1.15,
       mix: { holstein: 3, sky: 2 } },
-    { name: "Brown Cow Blitz",   quota: 14, interval: 1.45, speedMult: 1.1,
+    { name: "Brown Cow Blitz",   quota: 28, interval: 0.72, speedMult: 1.3,
       mix: { jersey: 1 } },
-    { name: "Mixed Company",     quota: 16, interval: 1.35, speedMult: 1.1,
+    { name: "Mixed Company",     quota: 32, interval: 0.68, speedMult: 1.3,
       mix: { holstein: 2, jersey: 2, sky: 1 }, golden: true },
-    { name: "Chicken Run",       quota: 16, interval: 1.0,  speedMult: 1.15,
+    { name: "Chicken Run",       quota: 32, interval: 0.5,  speedMult: 1.4,
       mix: { chicken: 1 }, golden: true },
-    { name: "Barnyard Bedlam",   quota: 18, interval: 1.15, speedMult: 1.2,
+    { name: "Barnyard Bedlam",   quota: 36, interval: 0.58, speedMult: 1.45,
       mix: { holstein: 2, chicken: 2, pig: 1 }, golden: true },
-    { name: "Pig Rush",          quota: 18, interval: 1.0,  speedMult: 1.3,
+    { name: "Pig Rush",          quota: 36, interval: 0.5,  speedMult: 1.55,
       mix: { pig: 1 }, golden: true },
-    { name: "Counting Sheep",    quota: 20, interval: 0.95, speedMult: 1.25,
+    { name: "Counting Sheep",    quota: 40, interval: 0.48, speedMult: 1.5,
       mix: { sheep: 3, jersey: 1 }, night: true, golden: true },
-    { name: "Stampede!",         quota: 22, interval: 0.9,  speedMult: 1.45,
+    { name: "Stampede!",         quota: 44, interval: 0.45, speedMult: 1.75,
       mix: { holstein: 2, jersey: 1, sky: 1 }, stampede: true, golden: true },
-    { name: "Total Farmageddon", quota: 25, interval: 0.8,  speedMult: 1.5,
+    { name: "Total Farmageddon", quota: 50, interval: 0.4,  speedMult: 1.8,
       mix: { holstein: 1, jersey: 1, sky: 1, chicken: 1, pig: 1, sheep: 1 },
       stampede: true, golden: true },
   ];
@@ -767,9 +771,9 @@
     const mixes = [LEVELS[5].mix, LEVELS[6].mix, LEVELS[8].mix, LEVELS[9].mix];
     return {
       name: "Farmageddon " + (over + 1),
-      quota: 25 + over * 2,
-      interval: Math.max(0.4, 0.8 * Math.pow(0.95, over)),
-      speedMult: 1.5 * Math.pow(1.06, over),
+      quota: 50 + over * 4,
+      interval: Math.max(0.22, 0.4 * Math.pow(0.95, over)),
+      speedMult: 1.8 * Math.pow(1.06, over),
       mix: mixes[(over - 1 + mixes.length) % mixes.length],
       night: n % 4 === 0,
       stampede: n % 3 === 0,
@@ -779,7 +783,7 @@
 
   // ======================= SETTINGS =======================
 
-  const DEFAULT_SETTINGS = { herdSpeed: 100, spawnRate: 100, capacity: 30 };
+  const DEFAULT_SETTINGS = { herdSpeed: 100, spawnRate: 100, capacity: 30, quotaScale: 100 };
   let settings = Object.assign({}, DEFAULT_SETTINGS);
 
   try {
@@ -1393,9 +1397,11 @@
   const speedSlider = document.getElementById("speed-slider");
   const spawnSlider = document.getElementById("spawn-slider");
   const capacitySlider = document.getElementById("capacity-slider");
+  const quotaSlider = document.getElementById("quota-slider");
   const speedValueEl = document.getElementById("speed-value");
   const spawnValueEl = document.getElementById("spawn-value");
   const capacityValueEl = document.getElementById("capacity-value");
+  const quotaValueEl = document.getElementById("quota-value");
 
   try {
     hiScore = parseInt(localStorage.getItem("cowClickerHiScore") || "0", 10) || 0;
@@ -1413,9 +1419,13 @@
   }
   updateHiScoreDisplay();
 
+  function quotaFor() {
+    return Math.max(1, Math.round(currentLevel.quota * settings.quotaScale / 100));
+  }
+
   function updateQuotaDisplay() {
     levelNumEl.textContent = String(level);
-    quotaProgressEl.textContent = levelKills + "/" + currentLevel.quota;
+    quotaProgressEl.textContent = levelKills + "/" + quotaFor();
   }
 
   function capacity() { return settings.capacity; }
@@ -1755,7 +1765,7 @@
         levelKills++;
         updateQuotaDisplay();
         playPopFor(cow.species);
-        if (levelKills >= currentLevel.quota) levelClear();
+        if (levelKills >= quotaFor()) levelClear();
         break;
       }
     }
@@ -1779,9 +1789,11 @@
     speedSlider.value = settings.herdSpeed;
     spawnSlider.value = settings.spawnRate;
     capacitySlider.value = settings.capacity;
+    quotaSlider.value = settings.quotaScale;
     speedValueEl.textContent = settings.herdSpeed + "%";
     spawnValueEl.textContent = settings.spawnRate + "%";
     capacityValueEl.textContent = settings.capacity;
+    quotaValueEl.textContent = settings.quotaScale + "%";
   }
 
   function openSettings() {
@@ -1794,6 +1806,11 @@
     settingsOverlay.classList.remove("visible");
     paused = false;
     saveSettings();
+    updateQuotaDisplay();
+    // a lowered quota may already be satisfied by the current kill count
+    if (gameMode === "playing" && levelState === "running" && levelKills >= quotaFor()) {
+      levelClear();
+    }
   }
 
   settingsToggleBtn.addEventListener("click", e => {
@@ -1814,6 +1831,10 @@
   capacitySlider.addEventListener("input", () => {
     settings.capacity = parseInt(capacitySlider.value, 10);
     capacityValueEl.textContent = settings.capacity;
+  });
+  quotaSlider.addEventListener("input", () => {
+    settings.quotaScale = parseInt(quotaSlider.value, 10);
+    quotaValueEl.textContent = settings.quotaScale + "%";
   });
 
   startGameBtn.addEventListener("click", e => {
@@ -1998,7 +2019,7 @@
   };
   window.__cowState = () => ({
     mode: gameMode, levelState, paused, level, levelKills,
-    quota: currentLevel.quota, capacity: capacity(), score, VW, VH, pixelScale,
+    quota: quotaFor(), capacity: capacity(), score, VW, VH, pixelScale,
     night: sceneryNight,
     cows: cows.map(c => ({
       x: Math.round(c.x), y: Math.round(c.y), w: c.w, h: c.h,

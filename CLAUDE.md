@@ -88,10 +88,13 @@ and the Next Level button calls `startLevel(n+1)`; the overflow lose condition
 (`fieldCount() >= capacity()`) checks non-bonus animals only.
 
 **User difficulty settings multiply on top of level specs.** The `settings` object
-(herdSpeed %, spawnRate %, capacity) is edited by three sliders in the settings
-overlay (which pauses the game via the `paused` flag), persisted to localStorage
-(`cowClickerSettings`), and applied inside `speedFor()`, `currentSpawnInterval()`,
-and `capacity()` — level definitions never see them.
+(herdSpeed %, spawnRate %, capacity, quotaScale %) is edited by four sliders in the
+settings overlay (which pauses the game via the `paused` flag), persisted to
+localStorage (`cowClickerSettings`), and applied inside `speedFor()`,
+`currentSpawnInterval()`, `capacity()`, and `quotaFor()` — level definitions never
+see them. Always read the effective quota via `quotaFor()`, never
+`currentLevel.quota` directly; `closeSettings()` re-checks quota satisfaction in
+case the slider dropped it below the current kill count mid-level.
 
 **Scenery is prerendered once, not redrawn per frame.** `buildScenery()` paints sky
 bands, hills, treeline, barn, field, fence, and scattered grass/flowers onto a single

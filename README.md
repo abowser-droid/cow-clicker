@@ -22,11 +22,12 @@ localStorage.
 
 ## Settings
 
-The Settings button opens three sliders (persisted in localStorage):
+The Settings button opens four sliders (persisted in localStorage):
 
 - **Herd Speed** (50–200%) — how fast animals move
 - **Spawn Rate** (50–200%) — how quickly they arrive
 - **Field Capacity** (15–50) — how many fit before game over; lower is harder
+- **Level Quota** (50–200%) — scales how many pops each level takes to clear
 
 ## What changed from the original
 
