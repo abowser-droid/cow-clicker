@@ -749,33 +749,37 @@
   // quota: pops needed to clear. interval: base seconds between spawns.
   // speedMult: multiplies species base speed. mix: weighted species table.
 
+  // Baseline calibrated 2026-08-04 against Andy's benchmark run: a good human
+  // at Herd Speed 190% / Spawn Rate 140% reached level 16, so those multipliers
+  // are folded into these numbers and the sliders scale from here.
+  //
   // NOTE: Counting Sheep is deliberately tuned gentler than its neighbors —
   // sheep spawn in flocks of 2-3 per spawn event, so its effective arrival rate
   // is ~2.5x whatever interval it's given.
   const LEVELS = [
-    { name: "Fresh Pasture",     quota: 40, interval: 0.43, speedMult: 1.3,
+    { name: "Fresh Pasture",     quota: 40, interval: 0.31, speedMult: 2.5,
       mix: { holstein: 1 } },
-    { name: "The Herd Takes Wing", quota: 48, interval: 0.39, speedMult: 1.4,
+    { name: "The Herd Takes Wing", quota: 48, interval: 0.28, speedMult: 2.65,
       mix: { holstein: 3, sky: 2 } },
-    { name: "Brown Cow Blitz",   quota: 56, interval: 0.36, speedMult: 1.55,
+    { name: "Brown Cow Blitz",   quota: 56, interval: 0.26, speedMult: 2.95,
       mix: { jersey: 1 } },
-    { name: "Mixed Company",     quota: 64, interval: 0.34, speedMult: 1.55,
+    { name: "Mixed Company",     quota: 64, interval: 0.24, speedMult: 2.95,
       mix: { holstein: 2, jersey: 2, sky: 1 }, golden: true },
-    { name: "Chicken Run",       quota: 48, interval: 0.33, speedMult: 1.3,
+    { name: "Chicken Run",       quota: 48, interval: 0.24, speedMult: 2.45,
       mix: { chicken: 1 }, golden: true },
-    { name: "Barnyard Bedlam",   quota: 64, interval: 0.32, speedMult: 1.75,
+    { name: "Barnyard Bedlam",   quota: 64, interval: 0.23, speedMult: 3.3,
       mix: { holstein: 2, chicken: 2, pig: 1 }, golden: true },
-    { name: "Pig Rush",          quota: 64, interval: 0.31, speedMult: 1.85,
+    { name: "Pig Rush",          quota: 64, interval: 0.22, speedMult: 3.5,
       mix: { pig: 1 }, golden: true },
-    { name: "Counting Sheep",    quota: 40, interval: 1.0,  speedMult: 1.3,
+    { name: "Counting Sheep",    quota: 40, interval: 0.71, speedMult: 2.45,
       mix: { sheep: 3, jersey: 1 }, night: true, golden: true },
     // Stampede levels carry ~5 extra cows per wave, so their base interval is
     // deliberately gentler than the levels before them.
-    { name: "Stampede!",         quota: 76, interval: 0.40, speedMult: 1.9,
+    { name: "Stampede!",         quota: 76, interval: 0.29, speedMult: 3.6,
       mix: { holstein: 2, jersey: 1, sky: 1 }, stampede: true, golden: true },
     // Gentler interval again because this mix includes sheep, and sheep arrive
     // 2-3 per spawn event, so the real arrival rate runs well above the number.
-    { name: "Total Farmageddon", quota: 80, interval: 0.48, speedMult: 2.0,
+    { name: "Total Farmageddon", quota: 80, interval: 0.34, speedMult: 3.8,
       mix: { holstein: 1, jersey: 1, sky: 1, chicken: 1, pig: 1, sheep: 1 },
       stampede: true, golden: true, funeralMarch: true },
   ];
@@ -788,8 +792,8 @@
     return {
       name: "Farmageddon " + (over + 1),
       quota: 88 + over * 6,
-      interval: Math.max(0.22, 0.42 * Math.pow(0.97, over)),
-      speedMult: 2.0 * Math.pow(1.04, over),
+      interval: Math.max(0.16, 0.30 * Math.pow(0.97, over)),
+      speedMult: 3.8 * Math.pow(1.04, over),
       mix: mixes[(over - 1 + mixes.length) % mixes.length],
       night: n % 4 === 0,
       stampede: n % 3 === 0,

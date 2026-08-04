@@ -78,14 +78,20 @@ these flags; there are no per-species update functions.
 
 **Tune levels against the simulated-player harness, not by eye.** Spawn rate is
 the dominant difficulty term, and it is easy to set a level nobody can clear: a
-level is only winnable if its arrival rate stays under a human tap rate (~2–3
-taps/sec). Drive `__cowTick` + synthetic pointerdowns at a fixed cadence (350ms =
-a good player, 450ms = an average one) and check every level still clears; the
-target curve is good-clears/average-dies on hard levels, both-clear on the
-breathers (5 and 8). Two traps this caught: sheep `flock` 2–3 per spawn event, so
-a mix containing sheep arrives far faster than its `interval` implies (Total
-Farmageddon needs a much gentler interval than its neighbors), and stampede waves
-add ~5 cows on top of the base rate, so stampede levels also need slack.
+level is only winnable if its arrival rate stays under a human tap rate. Drive
+`__cowTick` + synthetic pointerdowns at a fixed cadence (300ms and 350ms tiers)
+across all levels. The harness taps at a fixed rate, so it under-performs a real
+human, who bursts to 4–5 taps/sec when the field is dense — read its results as
+a floor, not a ceiling. Calibration anchor (2026-08-04): the current baseline
+equals what Andy (a good player) played at Herd Speed 190% / Spawn Rate 140% of
+the previous baseline, where he reached level 16. Against that baseline the
+300ms harness clears levels 1–2 plus the breathers (5, 8) and lands 85–95% of
+quota through the early teens — that near-miss profile is the target; if the
+harness clears everything easily, the game is too easy for Andy. Two traps the
+harness caught: sheep `flock` 2–3 per spawn event, so a mix containing sheep
+arrives far faster than its `interval` implies (Total Farmageddon needs a much
+gentler interval than its neighbors), and stampede waves add ~5 cows on top of
+the base rate, so stampede levels also need slack.
 
 **The level system drives difficulty.** `LEVELS` is an array of ten scripted specs —
 name, quota (pops to clear), base spawn interval, speed multiplier, weighted species
