@@ -3,13 +3,20 @@
 <head>
 <meta charset="UTF-8" />
 <title>Cow Clicker</title>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <style>
   html, body {
     margin: 0;
     padding: 0;
     background: #000;
     height: 100%;
+    /* block pinch-zoom, double-tap zoom, scroll-bounce, long-press callouts */
+    touch-action: none;
+    overscroll-behavior: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
@@ -1112,64 +1119,115 @@
   // --- music sequencer ---
 
   const NORMAL_BPM = 112;
-  const FAST_BPM = 152;
+  const MINOR_BPM = 126;
 
-  // 4 bars of 8 steps, C major, jaunty
-  const MELODY = [
+  // 4 bars of 8 steps. Major is the jaunty C-major tune; minor is the same
+  // tune in C natural minor (E->Eb, A->Ab) for when the herd meter goes yellow.
+  const MELODY_MAJOR = [
     262, 0, 330, 0, 392, 0, 330, 0,
     440, 0, 392, 330, 262, 0, 0, 0,
     294, 0, 349, 0, 440, 349, 294, 0,
     392, 0, 330, 294, 262, 0, 196, 0,
   ];
-  const BASS = [
+  const MELODY_MINOR = [
+    262, 0, 311, 0, 392, 0, 311, 0,
+    415, 0, 392, 311, 262, 0, 0, 0,
+    294, 0, 349, 0, 415, 349, 294, 0,
+    392, 0, 311, 294, 262, 0, 196, 0,
+  ];
+  const BASS_MAJOR = [
     131, 0, 131, 0, 165, 0, 131, 0,
     110, 0, 110, 0, 131, 0, 131, 0,
     147, 0, 147, 0, 110, 0, 110, 0,
     98, 0, 98, 0, 131, 0, 131, 0,
   ];
+  const BASS_MINOR = [
+    131, 0, 131, 0, 156, 0, 131, 0,
+    104, 0, 104, 0, 131, 0, 131, 0,
+    147, 0, 147, 0, 104, 0, 104, 0,
+    98, 0, 98, 0, 131, 0, 131, 0,
+  ];
 
   let musicTimer = null;
   let musicStep = 0;
-  let musicTempo = "none";
+  let musicMode = "none";    // none | normal | minor | alarm
   let musicLevelBoost = 0;   // bpm added per level so later rounds push harder
 
-  function startMusic(tempo) {
-    if (!soundEnabled || !audioCtx) return;
-    if (tempo === musicTempo && musicTimer) return;
-    stopMusic();
-    musicTempo = tempo;
-    const bpm = (tempo === "fast" ? FAST_BPM : NORMAL_BPM) + musicLevelBoost;
-    const stepMs = 60000 / (bpm * 2);
-    musicTimer = setInterval(() => {
-      if (!audioCtx || !soundEnabled) return;
-      const i = musicStep % MELODY.length;
-      const now = audioCtx.currentTime;
-      const dur = (60 / bpm) * 0.42;
+  function musicModeForDensity(d) {
+    return d >= 0.75 ? "alarm" : d >= 0.5 ? "minor" : "normal";
+  }
 
-      if (MELODY[i]) {
+  function startMusic(mode) {
+    if (!soundEnabled || !audioCtx) return;
+    if (mode === musicMode && musicTimer) return;
+    stopMusic();
+    musicMode = mode;
+
+    // red zone: the tune is gone, replaced by a pulsating two-tone alarm
+    if (mode === "alarm") {
+      let alarmStep = 0;
+      musicTimer = setInterval(() => {
+        if (!audioCtx || !soundEnabled) return;
+        const now = audioCtx.currentTime;
         const o = audioCtx.createOscillator();
         const gn = audioCtx.createGain();
         o.type = "square";
-        o.frequency.value = MELODY[i];
+        o.frequency.setValueAtTime(alarmStep % 2 === 0 ? 760 : 508, now);
+        gn.gain.setValueAtTime(0, now);
+        gn.gain.linearRampToValueAtTime(0.22, now + 0.02);
+        gn.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+        o.connect(gn).connect(masterGain);
+        o.start(now); o.stop(now + 0.18);
+        if (alarmStep % 4 === 0) {   // low throb underneath
+          const ob = audioCtx.createOscillator();
+          const gb = audioCtx.createGain();
+          ob.type = "triangle";
+          ob.frequency.value = 65;
+          gb.gain.setValueAtTime(0.35, now);
+          gb.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+          ob.connect(gb).connect(masterGain);
+          ob.start(now); ob.stop(now + 0.25);
+        }
+        alarmStep++;
+      }, 210);
+      return;
+    }
+
+    const minor = mode === "minor";
+    const melody = minor ? MELODY_MINOR : MELODY_MAJOR;
+    const bass = minor ? BASS_MINOR : BASS_MAJOR;
+    const bpm = (minor ? MINOR_BPM : NORMAL_BPM) + musicLevelBoost;
+    const stepMs = 60000 / (bpm * 2);
+    musicTimer = setInterval(() => {
+      if (!audioCtx || !soundEnabled) return;
+      const i = musicStep % melody.length;
+      const now = audioCtx.currentTime;
+      const dur = (60 / bpm) * 0.42;
+
+      if (melody[i]) {
+        const o = audioCtx.createOscillator();
+        const gn = audioCtx.createGain();
+        o.type = "square";
+        o.frequency.value = melody[i];
         gn.gain.setValueAtTime(0, now);
         gn.gain.linearRampToValueAtTime(0.26, now + 0.01);
         gn.gain.exponentialRampToValueAtTime(0.001, now + dur);
         o.connect(gn).connect(masterGain);
         o.start(now); o.stop(now + dur + 0.05);
       }
-      if (BASS[i]) {
+      if (bass[i]) {
         const o = audioCtx.createOscillator();
         const gn = audioCtx.createGain();
         o.type = "triangle";
-        o.frequency.value = BASS[i];
+        o.frequency.value = bass[i];
         gn.gain.setValueAtTime(0, now);
         gn.gain.linearRampToValueAtTime(0.3, now + 0.02);
         gn.gain.exponentialRampToValueAtTime(0.001, now + dur * 1.3);
         o.connect(gn).connect(masterGain);
         o.start(now); o.stop(now + dur * 1.3 + 0.05);
       }
-      // noise hat on offbeats when the herd is closing in
-      if (musicTempo === "fast" && i % 2 === 0) {
+      // noise hat on offbeats once the tune turns minor
+      if (musicMode === "minor" && i % 2 === 0) {
         const bufSize = Math.floor(audioCtx.sampleRate * 0.03);
         const nb = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
         const data = nb.getChannelData(0);
@@ -1189,7 +1247,7 @@
   function stopMusic() {
     if (musicTimer) clearInterval(musicTimer);
     musicTimer = null;
-    musicTempo = "none";
+    musicMode = "none";
   }
 
   // --- one-shot effects ---
@@ -1801,6 +1859,17 @@
 
   // ======================= INPUT =======================
 
+  // iOS zoom guards: CSS touch-action covers modern browsers; these catch
+  // Safari's proprietary pinch gesture events and any multi-touch pan/zoom.
+  ["gesturestart", "gesturechange", "gestureend"].forEach(ev =>
+    document.addEventListener(ev, e => e.preventDefault(), { passive: false }));
+  document.addEventListener("touchmove", e => {
+    if (e.touches.length > 1 || (typeof e.scale === "number" && e.scale !== 1)) {
+      e.preventDefault();
+    }
+  }, { passive: false });
+  document.addEventListener("dblclick", e => e.preventDefault(), { passive: false });
+
   screenCanvas.addEventListener("pointerdown", e => {
     wakeAudio();
     if (gameMode !== "playing" || levelState !== "running" || paused) return;
@@ -1834,7 +1903,7 @@
     if (masterGain) masterGain.gain.value = soundEnabled ? 0.45 : 0;
     if (!soundEnabled) stopMusic();
     else if (gameMode === "playing" && levelState === "running") {
-      startMusic(fieldCount() / capacity() >= 0.8 ? "fast" : "normal");
+      startMusic(musicModeForDensity(fieldCount() / capacity()));
     }
   });
 
@@ -2037,7 +2106,7 @@
     }
     if (gameMode === "playing" && levelState === "running" && !paused &&
         audioCtx && audioCtx.state === "running" && soundEnabled) {
-      startMusic(density >= 0.8 ? "fast" : "normal");
+      startMusic(musicModeForDensity(density));
     }
   }
 
@@ -2093,6 +2162,14 @@
         else drawAnimal(ctx, cow, levelTime);
       }
       drawParticles(ctx);
+
+      // red zone: the whole scene pulses red along with the alarm
+      if (gameMode === "playing" && levelState === "running" &&
+          fieldCount() / capacity() >= 0.75) {
+        const a = 0.08 + 0.06 * Math.sin(levelTime * 10);
+        ctx.fillStyle = "rgba(255, 32, 16, " + a.toFixed(3) + ")";
+        ctx.fillRect(0, 0, VW, VH);
+      }
     }
 
     // scale up to the screen
@@ -2115,7 +2192,7 @@
   window.__cowState = () => ({
     mode: gameMode, levelState, paused, level, levelKills,
     quota: quotaFor(), capacity: capacity(), score, VW, VH, pixelScale,
-    night: sceneryNight,
+    night: sceneryNight, musicMode,
     cows: cows.map(c => ({
       x: Math.round(c.x), y: Math.round(c.y), w: c.w, h: c.h,
       species: c.species, exploding: c.exploding,

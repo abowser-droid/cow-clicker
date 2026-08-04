@@ -40,7 +40,11 @@ The Settings button opens four sliders (persisted in localStorage):
 - Level system with quotas, interstitials, and procedural post-10 difficulty
   (the original was a single endless round).
 - Species-specific pop sounds (cluck, oink, bleat, chime) on top of the chiptune,
-  which gains tempo with level and herd pressure.
+  which gains tempo with level and escalates with herd pressure: the tune turns
+  minor when the herd meter goes yellow, and in the red zone it becomes a
+  pulsating two-tone alarm while the whole scene pulses red.
+- Touch hardened for phones: pinch-zoom, double-tap zoom, scroll-bounce, and
+  long-press callouts are all blocked.
 - Richer scenery: barn, treeline, fence, drifting clouds — with a night variant.
 
 ## Debug

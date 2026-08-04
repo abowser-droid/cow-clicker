@@ -121,11 +121,23 @@ with a single hardcoded `introCow`.
 
 **Audio is a hand-rolled WebAudio step sequencer**, not audio files. `startMusic()`
 schedules a `setInterval` that fires once per 16th-note step, walking fixed melody/
-bass frequency arrays (`MELODY`, `BASS`) and synthesizing oscillators per note;
-`updateMeter()` switches between `"normal"` and `"fast"` tempo based on herd density
-each frame. One-shot effects (`playPop`, `playMoo`, `playSadTrombone`) build and fire
-their own oscillator graphs on demand. `audioCtx` is created lazily on first user
+bass frequency arrays and synthesizing oscillators per note. Herd density drives a
+three-tier escalation via `musicModeForDensity()` (called from `updateMeter()`):
+`"normal"` plays the major-key tune, `"minor"` (density ≥ 0.5, the meter's yellow)
+plays the same tune with E→Eb and A→Ab (`MELODY_MINOR`/`BASS_MINOR`) faster and
+with noise hats, and `"alarm"` (density ≥ 0.75, red) abandons the tune for a
+pulsating two-tone siren. The red zone also draws a pulsing translucent red
+overlay on the buffer at the end of the frame's draw pass. One-shot effects
+(`playPop`, `playMoo`, `playSadTrombone`, `playFuneralMarch`) build and fire their
+own oscillator graphs on demand. `audioCtx` is created lazily on first user
 gesture (`wakeAudio`) per browser autoplay policy.
+
+**Mobile zoom is blocked in three layers**: `touch-action: none` +
+`overscroll-behavior: none` on html/body, `maximum-scale=1, user-scalable=no` in
+the viewport meta, and JS `preventDefault` on Safari's proprietary
+`gesturestart/change/end` events, multi-touch `touchmove`, and `dblclick`. iOS
+pinch/double-tap previously scaled the page and broke play; don't remove any
+layer without retesting on a real iPhone.
 
 **`hiScore` persists via `localStorage`** (`cowClickerHiScore`); everything else
 (score, cow positions, difficulty ramp) resets each `startGame()`/restart and is
