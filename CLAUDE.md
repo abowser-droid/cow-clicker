@@ -107,9 +107,13 @@ case the slider dropped it below the current kill count mid-level.
 
 **Scenery is prerendered once, not redrawn per frame.** `buildScenery()` paints sky
 bands, hills, treeline, barn, field, fence, and scattered grass/flowers onto a single
-offscreen canvas (`scenery`) using a deterministic pseudo-scatter (index-based, not
-`Math.random()`) so it's stable across resizes. It's rebuilt only in `resize()`. Only
-clouds animate independently every frame (`drawClouds`), since they drift.
+offscreen canvas (`scenery`), rebuilt only on resize or day/night change. The field
+scatter (jagged mowing bands, dry patches, grass tufts, clumped flowers) uses a
+fixed-seed `mulberry32` PRNG — organic-looking but identical on every rebuild, so
+nothing reshuffles mid-game. Don't replace it with index-based formulas like
+`(i * 53) % VW`: linear congruences put the dots on visible diagonal lattices,
+which is exactly what this replaced. Only clouds animate independently every frame
+(`drawClouds`), since they drift.
 
 **Game state is a small set of module-level variables** (`gameMode`, `cows`,
 `particles`, `floaters`, `score`, `hiScore`, `playTime`, `spawnTimer`) closed over by
