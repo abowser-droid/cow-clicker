@@ -1,0 +1,1327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Cow Clicker</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #000;
+    height: 100%;
+  }
+
+  body {
+    font-family: "Courier New", monospace;
+    overflow: hidden;
+  }
+
+  #game-root {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    overflow: hidden;
+  }
+
+  #game-canvas {
+    position: absolute;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+
+  /* ---------- HUD ---------- */
+
+  .hud {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    color: #fff;
+    text-shadow: 2px 2px #000;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-size: 11px;
+    font-weight: bold;
+  }
+
+  #score-display {
+    position: absolute;
+    top: 10px;
+    left: 12px;
+    padding: 5px 9px;
+    background: rgba(0, 0, 0, 0.65);
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 2px #000;
+  }
+
+  #hiscore-display {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 5px 9px;
+    background: rgba(0, 0, 0, 0.65);
+    border: 2px solid #f5a623;
+    box-shadow: 0 0 0 2px #000;
+    color: #f5a623;
+  }
+
+  #sound-toggle {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    padding: 6px 10px;
+    background: #222;
+    color: #fff;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 2px #000;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: bold;
+    text-shadow: 2px 2px #000;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-size: 10px;
+    pointer-events: auto;
+  }
+
+  #sound-toggle:active, #sound-toggle:hover { background: #444; }
+
+  /* ---------- Herd meter ---------- */
+
+  #meter-container {
+    position: absolute;
+    top: 58px;
+    right: 12px;
+    width: 34px;
+    height: 30vh;
+    max-height: 230px;
+    background: #111;
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 2px #000;
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    pointer-events: none;
+  }
+
+  #meter-label { font-size: 8px; margin-bottom: 4px; }
+
+  #meter-shell {
+    position: relative;
+    width: 16px;
+    flex: 1;
+    background: #222;
+    border: 2px solid #888;
+    box-shadow: inset 0 0 0 2px #000;
+    overflow: hidden;
+  }
+
+  #meter-fill {
+    position: absolute;
+    bottom: 0; left: 0;
+    width: 100%; height: 0%;
+    background: #2ecc71;
+  }
+
+  #meter-shell.safe   #meter-fill { background: #2ecc71; }
+  #meter-shell.warn   #meter-fill { background: #f1c40f; }
+  #meter-shell.danger #meter-fill {
+    background: #e74c3c;
+    animation: dangerPulse 0.5s infinite;
+  }
+
+  @keyframes dangerPulse {
+    0%   { filter: brightness(1); }
+    50%  { filter: brightness(1.5); }
+    100% { filter: brightness(1); }
+  }
+
+  #meter-status-text { font-size: 8px; margin-top: 3px; }
+
+  /* ---------- Overlay panels ---------- */
+
+  .overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #fff;
+    text-shadow: 2px 2px #000;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    padding: 16px;
+    box-sizing: border-box;
+  }
+
+  .panel {
+    border: 4px solid #fff;
+    box-shadow: 0 0 0 3px #000, 0 8px 0 3px rgba(0,0,0,0.45);
+    padding: 20px 26px;
+    max-width: 340px;
+  }
+
+  #splash-overlay { align-items: flex-start; padding-top: 10vh; }
+
+  #splash-panel { background: linear-gradient(#1a5b88, #0b2b4a); }
+
+  .big-title {
+    font-size: 30px;
+    line-height: 1.05;
+    font-weight: bold;
+    color: #f5a623;
+    text-shadow:
+      2px 0 #7a3802, -2px 0 #7a3802, 0 2px #7a3802, 0 -2px #7a3802,
+      2px 2px #7a3802, -2px -2px #7a3802, 2px -2px #7a3802, -2px 2px #7a3802,
+      4px 4px #000;
+    margin-bottom: 10px;
+  }
+
+  .subtitle { font-size: 10px; margin-bottom: 16px; opacity: 0.95; }
+
+  .pixel-btn {
+    padding: 10px 22px;
+    background: #222;
+    color: #fff;
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 2px #000;
+    font-family: inherit;
+    font-weight: bold;
+    text-shadow: 2px 2px #000;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-size: 11px;
+    cursor: pointer;
+  }
+
+  .pixel-btn:active, .pixel-btn:hover { background: #444; }
+
+  .blink { animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0.45; } }
+
+  #game-over-overlay {
+    background: rgba(0, 0, 0, 0.85);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease-out;
+  }
+
+  #game-over-overlay.visible { opacity: 1; pointer-events: auto; }
+
+  #game-over-panel { background: linear-gradient(#5b1b8f, #2b0c46); }
+
+  .go-title { font-size: 26px; color: #ff5544; margin-bottom: 8px; font-weight: bold;
+    text-shadow:
+      2px 0 #5a0d00, -2px 0 #5a0d00, 0 2px #5a0d00, 0 -2px #5a0d00, 4px 4px #000; }
+
+  #final-score { font-size: 12px; margin-bottom: 6px; }
+  #new-hiscore { font-size: 11px; color: #f5a623; margin-bottom: 10px; display: none; }
+  #hint-text { font-size: 9px; margin-top: 12px; opacity: 0.85; letter-spacing: 1px; }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div id="game-root">
+  <canvas id="game-canvas"></canvas>
+
+  <div class="hud">
+    <div id="score-display">Score <span id="score-value">00000</span></div>
+    <div id="hiscore-display">Hi <span id="hiscore-value">00000</span></div>
+    <button id="sound-toggle">Sound: On</button>
+
+    <div id="meter-container">
+      <div id="meter-label">Herd</div>
+      <div id="meter-shell" class="safe"><div id="meter-fill"></div></div>
+      <div id="meter-status-text">OK</div>
+    </div>
+  </div>
+
+  <div id="splash-overlay" class="overlay">
+    <div id="splash-panel" class="panel">
+      <div class="big-title">Cow<br>Clicker</div>
+      <div class="subtitle">Click the herd before it takes over</div>
+      <button id="start-game" class="pixel-btn blink">Press Start</button>
+    </div>
+  </div>
+
+  <div id="game-over-overlay" class="overlay">
+    <div id="game-over-panel" class="panel">
+      <div class="go-title">Game Over</div>
+      <div class="subtitle">The cows got their revenge!</div>
+      <div id="final-score">Final Score 00000</div>
+      <div id="new-hiscore">New Hi Score!</div>
+      <button id="play-again" class="pixel-btn">Play Again</button>
+      <div id="hint-text">Click cows fast to keep the field from overflowing</div>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+(function () {
+
+  // ======================= CONFIG =======================
+
+  const MAX_COWS = 30;
+  const INITIAL_SPAWN_INTERVAL = 1.8;   // seconds
+  const MIN_SPAWN_INTERVAL = 0.35;
+  const SPAWN_RAMP = 0.055;             // interval shrink per second of play
+  const SKY_COW_CHANCE = 0.22;
+  const HORIZON = 0.44;                 // fraction of screen height
+  const EXPLOSION_DURATION = 0.4;
+
+  // ======================= CANVAS / LOW-RES BUFFER =======================
+
+  const rootEl = document.getElementById("game-root");
+  const screenCanvas = document.getElementById("game-canvas");
+  const screenCtx = screenCanvas.getContext("2d");
+
+  const buf = document.createElement("canvas");   // low-res pixel buffer
+  const ctx = buf.getContext("2d");
+
+  let VW = 320, VH = 180;   // virtual (buffer) size
+  let pixelScale = 3;
+  let sizedW = 0, sizedH = 0;   // root size the buffers were built for
+
+  function resize() {
+    sizedW = rootEl.clientWidth; sizedH = rootEl.clientHeight;
+    // hidden/collapsed windows report 0x0: run on a placeholder size until real
+    // dimensions arrive (the frame loop re-checks every frame)
+    const w = sizedW < 8 ? 640 : sizedW;
+    const h = sizedH < 8 ? 360 : sizedH;
+    pixelScale = Math.max(2, Math.floor(h / 200));
+    VW = Math.ceil(w / pixelScale);
+    VH = Math.ceil(h / pixelScale);
+    buf.width = VW;
+    buf.height = VH;
+    screenCanvas.width = VW * pixelScale;
+    screenCanvas.height = VH * pixelScale;
+    screenCanvas.style.width = (VW * pixelScale) + "px";
+    screenCanvas.style.height = (VH * pixelScale) + "px";
+    screenCanvas.style.left = Math.floor((w - VW * pixelScale) / 2) + "px";
+    screenCanvas.style.top = Math.floor((h - VH * pixelScale) / 2) + "px";
+    screenCtx.imageSmoothingEnabled = false;
+    ctx.imageSmoothingEnabled = false;
+    buildScenery();
+  }
+  window.addEventListener("resize", resize);
+
+  // ======================= SPRITES =======================
+  //
+  // Sprites are ASCII pixel maps. Each character maps to a palette color;
+  // "." is transparent. Rows may be ragged (short rows pad with transparent).
+
+  function buildSprite(rows, palette) {
+    const h = rows.length;
+    let w = 0;
+    for (const r of rows) w = Math.max(w, r.length);
+    const c = document.createElement("canvas");
+    c.width = w; c.height = h;
+    const g = c.getContext("2d");
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < rows[y].length; x++) {
+        const ch = rows[y][x];
+        if (ch === "." || ch === " ") continue;
+        const col = palette[ch];
+        if (!col) continue;
+        g.fillStyle = col;
+        g.fillRect(x, y, 1, 1);
+      }
+    }
+    return c;
+  }
+
+  function flipSprite(sprite) {
+    const c = document.createElement("canvas");
+    c.width = sprite.width; c.height = sprite.height;
+    const g = c.getContext("2d");
+    g.translate(sprite.width, 0);
+    g.scale(-1, 1);
+    g.drawImage(sprite, 0, 0);
+    return c;
+  }
+
+  // --- Cow body (facing left). Legs, tail and wings are drawn at runtime. ---
+  //
+  // o outline   W white coat   w coat shade   B patch   b patch light
+  // P pink      p pink shade   H horn         E eye     N nostril
+
+  const COW_BODY_ROWS = [
+    "...HH..BB",
+    "..oWWWoBBo",
+    ".oWWWWWoBbo............ooooo",
+    ".oWEWWWWWoooooooooooooooWWWWwoo",
+    ".oWEWWWWWWWWWWWWWWWWWWWWWBBBBBWo",
+    "oPPWWWWWWWWWWWBBBBBBBWWWBBBBBBBo",
+    "oPNPWWWWWWWWWWBbBBBBBWWWBBBBBBBo",
+    "oPpPoWWWWWWWWWBBBBBBWWWWBBBBBBWo",
+    ".oPPoWWWWWWWWWWBBBBWWWWWWBBBBWWo",
+    "..ooooWWWWWWWWWWWWWWWWWWWWBBBWWo",
+    "......ooWWWWWWWWWWWWWWWWWWWWWwwo",
+    "........ooWWWWWWWBBBBBWWWWWWwwo",
+    "..........oWWWWWWBBBBwwwwwwWoo",
+    "...........ooooowwwwoooPPPPPo",
+    "................oooo..oPPPPPPo",
+    "......................oPpPpPo",
+    "........................p.p",
+  ];
+
+  const HOLSTEIN_PALETTE = {
+    o: "#241f1c",
+    W: "#f2efe4",
+    w: "#d6d0bd",
+    B: "#33302e",
+    b: "#4a4643",
+    P: "#e8a2ad",
+    p: "#c27b88",
+    H: "#e6d5a0",
+    E: "#141210",
+    N: "#8f5560",
+  };
+
+  const JERSEY_PALETTE = Object.assign({}, HOLSTEIN_PALETTE, {
+    W: "#d9a86c",
+    w: "#bd8c52",
+    B: "#7a4a2b",
+    b: "#8f5c38",
+  });
+
+  const SKY_PALETTE = Object.assign({}, HOLSTEIN_PALETTE, {
+    W: "#f4f4ff",
+    w: "#cfd4ef",
+    B: "#4a4f66",
+    b: "#5d6378",
+  });
+
+  // Wing frames for the sky cow (drawn above the back), facing left.
+  const WING_PALETTE = { o: "#241f1c", F: "#dde6ff", f: "#8fa3d9" };
+  const WING_ROWS = [
+    [ // up
+      "...ooFFoo....",
+      "..oFFFFFFo...",
+      ".oFFFfffFFo..",
+      "oFFfffffoo...",
+      "offfooo......",
+      ".ooo.........",
+    ],
+    [ // mid
+      ".oooooooo....",
+      "oFFFFFFFFoo..",
+      ".oFFffffFFFo.",
+      "..oofffffoo..",
+      "....ooooo....",
+    ],
+    [ // down
+      "..ooooo......",
+      ".oFFFFFoo....",
+      "..oFFfffFo...",
+      "...oFFfffo...",
+      "....oFffo....",
+      ".....ooo.....",
+    ],
+  ];
+
+  // Farmer for the splash intro (facing right), 2 run frames.
+  const FARMER_PALETTE = {
+    o: "#241f1c",
+    H: "#8d6e4f",   // hat
+    h: "#6b5138",
+    S: "#ffcf9e",   // skin
+    R: "#c62828",   // shirt
+    r: "#8f1d1d",
+    D: "#2b57a8",   // overalls
+    d: "#1d3d78",
+    B: "#3b2b18",   // boots
+  };
+
+  const FARMER_FRAMES = [
+    [ // legs apart
+      ".....ooooo",
+      ".....oHHHo",
+      "...oHHHHHHHo",
+      ".....oSSSSo",
+      ".....oSSoSo",
+      ".....oSSSo",
+      "....oRRRRo",
+      "...oRRRRRRo",
+      "..oRRoDDoRRo",
+      "..oRoDDDDoRo",
+      "..oSoDDDDoSo",
+      ".....oDDDDo",
+      "....oDDDDo",
+      "....oDDDDo",
+      "...oDDoDDo",
+      "...oDDooDDo",
+      "..oDDo..oDDo",
+      ".oDDo....oDDo",
+      ".oBBo....oBBo",
+      "oBBBo....oBBBo",
+      "oooo......oooo",
+    ],
+    [ // legs passing
+      ".....ooooo",
+      ".....oHHHo",
+      "...oHHHHHHHo",
+      ".....oSSSSo",
+      ".....oSSoSo",
+      ".....oSSSo",
+      "....oRRRRoS",
+      "...oRRRRRRo",
+      "..oRRoDDoRRo",
+      "...oRoDDDDo",
+      "...oSoDDDDo",
+      ".....oDDDDo",
+      "....oDDDDo",
+      "....oDDDDo",
+      "....oDDDo",
+      "....oDDDo",
+      "....oDDDo",
+      "....oDDDo",
+      "....oBBBo",
+      "...oBBBBo",
+      "...ooooo",
+    ],
+  ];
+
+  const cowSprites = {};   // { holstein: {left, right}, jersey: {...}, sky: {...} }
+
+  function buildAllSprites() {
+    const defs = {
+      holstein: HOLSTEIN_PALETTE,
+      jersey: JERSEY_PALETTE,
+      sky: SKY_PALETTE,
+    };
+    for (const key in defs) {
+      const left = buildSprite(COW_BODY_ROWS, defs[key]);
+      cowSprites[key] = { left, right: flipSprite(left) };
+    }
+    cowSprites.wings = WING_ROWS.map(rows => {
+      const left = buildSprite(rows, WING_PALETTE);
+      return { left, right: flipSprite(left) };
+    });
+    cowSprites.farmer = FARMER_FRAMES.map(rows => buildSprite(rows, FARMER_PALETTE));
+  }
+
+  const COW_BODY_W = 33;
+  const COW_BODY_H = 17;
+  const LEG_TOP = 13;               // sprite row where legs attach
+  const LEG_LENGTH = 8;
+  const COW_W = COW_BODY_W;
+  const COW_H = LEG_TOP + LEG_LENGTH + 2;   // +2 for hooves
+
+  // Leg anchor x-positions measured on the facing-LEFT sprite.
+  const LEG_ANCHORS_LEFT = [
+    { x: 12, phase: 0 },            // front near
+    { x: 15, phase: Math.PI },      // front far
+    { x: 24, phase: Math.PI },      // rear far
+    { x: 28, phase: 0 },            // rear near
+  ];
+
+  function drawCowSprite(g, cow, time) {
+    const facingLeft = cow.vx < 0;
+    const variant = cowSprites[cow.variant];
+    const sprite = facingLeft ? variant.left : variant.right;
+    const x = Math.round(cow.x);
+    const bob = Math.round(Math.sin(cow.walkPhase * 2) * 1);
+    const y = Math.round(cow.y) + bob;
+
+    const bellyY = y + LEG_TOP;   // where legs start
+
+    // legs behind body: draw far pair darker first, then body, then near pair
+    const legFar = cow.variant === "jersey" ? "#a5793f" : "#cfc9b6";
+    const legNear = cow.variant === "jersey" ? "#d9a86c" : "#f2efe4";
+    const hoof = "#3d2f1f";
+    const skyLegFar = "#c3c9e6", skyLegNear = "#f4f4ff";
+
+    const isSky = cow.variant === "sky";
+    const farCol = isSky ? skyLegFar : legFar;
+    const nearCol = isSky ? skyLegNear : legNear;
+
+    const legLen = isSky ? 5 : LEG_LENGTH;
+
+    function drawLeg(anchorX, phase, near) {
+      const swing = Math.sin(cow.walkPhase + phase);
+      const dx = Math.round(swing * (isSky ? 1 : 2));
+      const lift = Math.abs(swing) > 0.75 && !isSky ? 1 : 0;
+      let lx = facingLeft ? x + anchorX : x + COW_BODY_W - anchorX - 2;
+      lx += dx;
+      const len = legLen - lift;
+      g.fillStyle = near ? nearCol : farCol;
+      g.fillRect(lx, bellyY, 2, len);
+      g.fillStyle = hoof;
+      g.fillRect(lx, bellyY + len, 2, 2);
+    }
+
+    // far legs
+    drawLeg(LEG_ANCHORS_LEFT[1].x, LEG_ANCHORS_LEFT[1].phase, false);
+    drawLeg(LEG_ANCHORS_LEFT[2].x, LEG_ANCHORS_LEFT[2].phase, false);
+
+    // body
+    g.drawImage(sprite, x, y);
+
+    // tail: hangs off the rump, outside the body silhouette, sways gently
+    const tailX = facingLeft ? x + COW_BODY_W - 1 : x;
+    const tailSway = Math.round(Math.sin(cow.walkPhase * 0.7 + 1) * 1);
+    g.fillStyle = isSky ? "#cfd4ef" : (cow.variant === "jersey" ? "#bd8c52" : "#d6d0bd");
+    g.fillRect(tailX, y + 5, 1, 5);
+    g.fillRect(tailX + tailSway, y + 10, 1, 5);
+    g.fillStyle = "#33302e";
+    g.fillRect(tailX + tailSway, y + 15, 1, 3);
+
+    // near legs
+    drawLeg(LEG_ANCHORS_LEFT[0].x, LEG_ANCHORS_LEFT[0].phase, true);
+    drawLeg(LEG_ANCHORS_LEFT[3].x, LEG_ANCHORS_LEFT[3].phase, true);
+
+    // wings for sky cows
+    if (isSky) {
+      const wing = cowSprites.wings[cow.wingFrame];
+      const ws = facingLeft ? wing.left : wing.right;
+      const wx = facingLeft ? x + 12 : x + COW_BODY_W - 12 - ws.width;
+      const wy = y + 7 - ws.height;
+      g.drawImage(ws, wx, wy);
+    }
+  }
+
+  // ======================= SCENERY =======================
+
+  let scenery = null;   // prerendered background canvas
+
+  function buildScenery() {
+    const c = document.createElement("canvas");
+    c.width = VW; c.height = VH;
+    const g = c.getContext("2d");
+    const horizonY = Math.round(VH * HORIZON);
+
+    // sky bands
+    g.fillStyle = "#63b1f2";
+    g.fillRect(0, 0, VW, horizonY);
+    g.fillStyle = "#7ecbff";
+    g.fillRect(0, Math.round(horizonY * 0.45), VW, horizonY - Math.round(horizonY * 0.45));
+    g.fillStyle = "#9edbff";
+    g.fillRect(0, Math.round(horizonY * 0.78), VW, horizonY - Math.round(horizonY * 0.78));
+
+    // sun
+    g.fillStyle = "#fff3a8";
+    g.fillRect(VW - 34, 8, 12, 12);
+    g.fillStyle = "#ffe36e";
+    g.fillRect(VW - 32, 10, 8, 8);
+
+    // distant hills
+    g.fillStyle = "#79b356";
+    for (let x = 0; x < VW; x += 46) {
+      const hw = 60, hh = 12;
+      for (let i = 0; i < hh; i++) {
+        const rowW = Math.round(hw * Math.sin(((i + 1) / hh) * Math.PI * 0.5));
+        g.fillRect(x + (hw - rowW) / 2, horizonY - hh + i, rowW, 1);
+      }
+    }
+
+    // treeline
+    g.fillStyle = "#2e7d32";
+    for (let x = -4; x < VW; x += 9) {
+      const th = 5 + ((x * 7) % 4);
+      g.fillRect(x, horizonY - th, 7, th);
+      g.fillRect(x + 2, horizonY - th - 2, 3, 2);
+    }
+
+    // barn on the horizon
+    const bx = Math.round(VW * 0.12), bw = 30, bh = 16;
+    const by = horizonY - bh + 2;
+    g.fillStyle = "#8f2b23";                       // barn body
+    g.fillRect(bx, by + 6, bw, bh - 6);
+    g.fillStyle = "#a83a30";
+    g.fillRect(bx, by + 6, bw, 2);
+    g.fillStyle = "#5c5049";                       // roof
+    g.fillRect(bx - 2, by + 4, bw + 4, 2);
+    g.fillRect(bx + 2, by + 2, bw - 4, 2);
+    g.fillRect(bx + 6, by, bw - 12, 2);
+    g.fillStyle = "#f2efe4";                       // door + trim
+    g.fillRect(bx + bw / 2 - 4, by + 9, 8, bh - 9);
+    g.fillStyle = "#6e1d17";
+    g.fillRect(bx + bw / 2 - 3, by + 10, 6, bh - 10);
+    g.fillStyle = "#f2efe4";
+    g.fillRect(bx + 4, by + 8, 4, 4);
+    g.fillRect(bx + bw - 8, by + 8, 4, 4);
+
+    // field
+    g.fillStyle = "#4caf50";
+    g.fillRect(0, horizonY, VW, VH - horizonY);
+
+    // mowed bands for depth
+    g.fillStyle = "#46a349";
+    for (let y = horizonY + 8; y < VH; y += 14) {
+      g.fillRect(0, y, VW, 5);
+    }
+
+    // fence along the horizon
+    g.fillStyle = "#8a6a44";
+    g.fillRect(0, horizonY + 2, VW, 1);
+    g.fillRect(0, horizonY + 5, VW, 1);
+    for (let x = 3; x < VW; x += 17) {
+      g.fillRect(x, horizonY, 2, 8);
+    }
+
+    // grass tufts + flowers (deterministic scatter)
+    for (let i = 0; i < Math.round(VW * 0.28); i++) {
+      const gx = (i * 53 + 11) % VW;
+      const gy = horizonY + 10 + ((i * 37 + 5) % (VH - horizonY - 14));
+      const kind = (i * 31) % 10;
+      if (kind < 6) {
+        g.fillStyle = "#3d9440";
+        g.fillRect(gx, gy, 1, 2);
+        g.fillRect(gx + 2, gy - 1, 1, 3);
+        g.fillRect(gx + 4, gy, 1, 2);
+      } else if (kind < 8) {
+        g.fillStyle = "#fff";
+        g.fillRect(gx, gy, 2, 2);
+        g.fillStyle = "#ffd54f";
+        g.fillRect(gx, gy, 1, 1);
+      } else {
+        g.fillStyle = "#e57373";
+        g.fillRect(gx, gy, 2, 2);
+      }
+    }
+
+    scenery = c;
+  }
+
+  // clouds drift, so they are entities rather than baked scenery
+  let clouds = [];
+  function initClouds() {
+    clouds = [];
+    for (let i = 0; i < 5; i++) {
+      clouds.push({
+        x: Math.random() * VW,
+        y: 6 + Math.random() * (VH * HORIZON * 0.6),
+        speed: 2 + Math.random() * 3,
+        scale: 1 + Math.floor(Math.random() * 2),
+      });
+    }
+  }
+
+  function drawClouds(g, dt) {
+    g.fillStyle = "#ffffff";
+    for (const cl of clouds) {
+      cl.x += cl.speed * dt;
+      if (cl.x > VW + 30) cl.x = -30;
+      const s = 3 * cl.scale;
+      const bx = Math.round(cl.x), by = Math.round(cl.y);
+      g.fillRect(bx, by, s * 4, s);
+      g.fillRect(bx + s, by - s, s * 2, s);
+      g.fillStyle = "#e8f4ff";
+      g.fillRect(bx, by + s, s * 4, Math.max(1, Math.round(s / 3)));
+      g.fillStyle = "#ffffff";
+    }
+  }
+
+  // ======================= AUDIO =======================
+
+  let audioCtx = null;
+  let masterGain = null;
+  let soundEnabled = true;
+
+  function initAudio() {
+    if (audioCtx) return;
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = soundEnabled ? 0.45 : 0;
+    masterGain.connect(audioCtx.destination);
+  }
+
+  function wakeAudio() {
+    initAudio();
+    if (audioCtx.state === "suspended") audioCtx.resume();
+  }
+
+  // --- music sequencer ---
+
+  const NORMAL_BPM = 112;
+  const FAST_BPM = 152;
+
+  // 4 bars of 8 steps, C major, jaunty
+  const MELODY = [
+    262, 0, 330, 0, 392, 0, 330, 0,
+    440, 0, 392, 330, 262, 0, 0, 0,
+    294, 0, 349, 0, 440, 349, 294, 0,
+    392, 0, 330, 294, 262, 0, 196, 0,
+  ];
+  const BASS = [
+    131, 0, 131, 0, 165, 0, 131, 0,
+    110, 0, 110, 0, 131, 0, 131, 0,
+    147, 0, 147, 0, 110, 0, 110, 0,
+    98, 0, 98, 0, 131, 0, 131, 0,
+  ];
+
+  let musicTimer = null;
+  let musicStep = 0;
+  let musicTempo = "none";
+
+  function startMusic(tempo) {
+    if (!soundEnabled || !audioCtx) return;
+    if (tempo === musicTempo && musicTimer) return;
+    stopMusic();
+    musicTempo = tempo;
+    const bpm = tempo === "fast" ? FAST_BPM : NORMAL_BPM;
+    const stepMs = 60000 / (bpm * 2);
+    musicTimer = setInterval(() => {
+      if (!audioCtx || !soundEnabled) return;
+      const i = musicStep % MELODY.length;
+      const now = audioCtx.currentTime;
+      const dur = (60 / bpm) * 0.42;
+
+      if (MELODY[i]) {
+        const o = audioCtx.createOscillator();
+        const gn = audioCtx.createGain();
+        o.type = "square";
+        o.frequency.value = MELODY[i];
+        gn.gain.setValueAtTime(0, now);
+        gn.gain.linearRampToValueAtTime(0.26, now + 0.01);
+        gn.gain.exponentialRampToValueAtTime(0.001, now + dur);
+        o.connect(gn).connect(masterGain);
+        o.start(now); o.stop(now + dur + 0.05);
+      }
+      if (BASS[i]) {
+        const o = audioCtx.createOscillator();
+        const gn = audioCtx.createGain();
+        o.type = "triangle";
+        o.frequency.value = BASS[i];
+        gn.gain.setValueAtTime(0, now);
+        gn.gain.linearRampToValueAtTime(0.3, now + 0.02);
+        gn.gain.exponentialRampToValueAtTime(0.001, now + dur * 1.3);
+        o.connect(gn).connect(masterGain);
+        o.start(now); o.stop(now + dur * 1.3 + 0.05);
+      }
+      // noise hat on offbeats when the herd is closing in
+      if (musicTempo === "fast" && i % 2 === 0) {
+        const bufSize = Math.floor(audioCtx.sampleRate * 0.03);
+        const nb = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
+        const data = nb.getChannelData(0);
+        for (let j = 0; j < bufSize; j++) data[j] = Math.random() * 2 - 1;
+        const src = audioCtx.createBufferSource();
+        src.buffer = nb;
+        const gn = audioCtx.createGain();
+        gn.gain.setValueAtTime(0.08, now);
+        gn.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+        src.connect(gn).connect(masterGain);
+        src.start(now);
+      }
+      musicStep++;
+    }, stepMs);
+  }
+
+  function stopMusic() {
+    if (musicTimer) clearInterval(musicTimer);
+    musicTimer = null;
+    musicTempo = "none";
+  }
+
+  function playPop() {
+    if (!soundEnabled || !audioCtx) return;
+    const now = audioCtx.currentTime;
+    const o = audioCtx.createOscillator();
+    const gn = audioCtx.createGain();
+    o.type = "square";
+    o.frequency.setValueAtTime(720, now);
+    o.frequency.exponentialRampToValueAtTime(130, now + 0.22);
+    gn.gain.setValueAtTime(0.45, now);
+    gn.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+    o.connect(gn).connect(masterGain);
+    o.start(now); o.stop(now + 0.26);
+  }
+
+  let lastMooTime = -10;
+  function playMoo() {
+    if (!soundEnabled || !audioCtx) return;
+    const now = audioCtx.currentTime;
+    if (now - lastMooTime < 2.5) return;
+    lastMooTime = now;
+    const o = audioCtx.createOscillator();
+    const o2 = audioCtx.createOscillator();
+    const gn = audioCtx.createGain();
+    const filt = audioCtx.createBiquadFilter();
+    filt.type = "lowpass";
+    filt.frequency.value = 600;
+    o.type = "sawtooth";
+    o.frequency.setValueAtTime(170, now);
+    o.frequency.linearRampToValueAtTime(105, now + 0.18);
+    o.frequency.linearRampToValueAtTime(122, now + 0.45);
+    o2.type = "sine";
+    o2.frequency.setValueAtTime(85, now);
+    o2.frequency.linearRampToValueAtTime(58, now + 0.45);
+    gn.gain.setValueAtTime(0, now);
+    gn.gain.linearRampToValueAtTime(0.35, now + 0.05);
+    gn.gain.setValueAtTime(0.35, now + 0.3);
+    gn.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+    o.connect(filt); o2.connect(filt);
+    filt.connect(gn).connect(masterGain);
+    o.start(now); o.stop(now + 0.6);
+    o2.start(now); o2.stop(now + 0.6);
+  }
+
+  function playSadTrombone() {
+    if (!soundEnabled || !audioCtx) return;
+    const notes = [370, 330, 294, 262];
+    const now = audioCtx.currentTime;
+    const noteDur = 0.3;
+    notes.forEach((freq, i) => {
+      const o = audioCtx.createOscillator();
+      const gn = audioCtx.createGain();
+      const t0 = now + i * noteDur * 0.9;
+      const t1 = t0 + noteDur * (i === notes.length - 1 ? 2 : 1);
+      o.type = "sawtooth";
+      o.frequency.setValueAtTime(freq, t0);
+      o.frequency.linearRampToValueAtTime(freq * 0.94, t1);
+      gn.gain.setValueAtTime(0, t0);
+      gn.gain.linearRampToValueAtTime(0.4, t0 + 0.05);
+      gn.gain.exponentialRampToValueAtTime(0.001, t1);
+      o.connect(gn).connect(masterGain);
+      o.start(t0); o.stop(t1 + 0.05);
+    });
+  }
+
+  // ======================= GAME STATE =======================
+
+  let gameMode = "splash";        // splash | playing | gameover
+  let cows = [];
+  let particles = [];
+  let floaters = [];              // "+1" score popups
+  let score = 0;
+  let hiScore = 0;
+  let playTime = 0;
+  let spawnTimer = INITIAL_SPAWN_INTERVAL;
+
+  const scoreValueEl = document.getElementById("score-value");
+  const hiscoreValueEl = document.getElementById("hiscore-value");
+  const soundToggleBtn = document.getElementById("sound-toggle");
+  const meterShellEl = document.getElementById("meter-shell");
+  const meterFillEl = document.getElementById("meter-fill");
+  const meterStatusTextEl = document.getElementById("meter-status-text");
+  const splashOverlay = document.getElementById("splash-overlay");
+  const startGameBtn = document.getElementById("start-game");
+  const gameOverOverlay = document.getElementById("game-over-overlay");
+  const finalScoreEl = document.getElementById("final-score");
+  const newHiscoreEl = document.getElementById("new-hiscore");
+  const playAgainBtn = document.getElementById("play-again");
+
+  try {
+    hiScore = parseInt(localStorage.getItem("cowClickerHiScore") || "0", 10) || 0;
+  } catch (e) { hiScore = 0; }
+
+  function fmt(n) { return String(n).padStart(5, "0"); }
+
+  function setScore(n) {
+    score = n;
+    scoreValueEl.textContent = fmt(score);
+  }
+
+  function updateHiScoreDisplay() {
+    hiscoreValueEl.textContent = fmt(hiScore);
+  }
+  updateHiScoreDisplay();
+
+  function currentSpawnInterval() {
+    return Math.max(MIN_SPAWN_INTERVAL, INITIAL_SPAWN_INTERVAL - playTime * SPAWN_RAMP);
+  }
+
+  function createCow(type) {
+    const horizonY = VH * HORIZON;
+    const fromLeft = Math.random() < 0.5;
+    const baseSpeed = type === "ground" ? 12 : 17;
+    const difficulty = 1 + (INITIAL_SPAWN_INTERVAL - currentSpawnInterval()) * 1.1;
+    const speed = baseSpeed * difficulty * (0.85 + Math.random() * 0.4);
+
+    let y;
+    if (type === "ground") {
+      const minY = horizonY + 4;
+      const maxY = VH - COW_H - 4;
+      y = minY + Math.random() * Math.max(4, maxY - minY);
+    } else {
+      const minY = 8;
+      const maxY = Math.max(12, horizonY - COW_H - 6);
+      y = minY + Math.random() * (maxY - minY);
+    }
+
+    return {
+      type,
+      variant: type === "sky" ? "sky" : (Math.random() < 0.72 ? "holstein" : "jersey"),
+      x: fromLeft ? -COW_W - 2 : VW + 2,
+      y, baseY: y,
+      vx: (fromLeft ? 1 : -1) * speed,
+      walkPhase: Math.random() * Math.PI * 2,
+      walkSpeed: type === "ground" ? 7 : 4,
+      wingFrame: 0,
+      wingTimer: Math.random() * 0.1,
+      exploding: false,
+      explosionTime: 0,
+    };
+  }
+
+  function spawnCows(dt) {
+    if (cows.length >= MAX_COWS) return;
+    spawnTimer -= dt;
+    if (spawnTimer <= 0) {
+      const type = Math.random() < SKY_COW_CHANCE ? "sky" : "ground";
+      cows.push(createCow(type));
+      if (type === "ground" && Math.random() < 0.35) playMoo();
+      spawnTimer += currentSpawnInterval();
+    }
+  }
+
+  function updateCows(dt) {
+    const horizonY = VH * HORIZON;
+    for (let i = cows.length - 1; i >= 0; i--) {
+      const cow = cows[i];
+
+      if (cow.exploding) {
+        cow.explosionTime += dt;
+        if (cow.explosionTime >= EXPLOSION_DURATION) cows.splice(i, 1);
+        continue;
+      }
+
+      cow.x += cow.vx * dt;
+      cow.walkPhase += cow.walkSpeed * dt;
+
+      if (cow.type === "sky") {
+        cow.y = cow.baseY + Math.sin(cow.walkPhase) * 3;
+        cow.wingTimer += dt;
+        if (cow.wingTimer > 0.1) {
+          cow.wingFrame = (cow.wingFrame + 1) % 3;
+          cow.wingTimer = 0;
+        }
+      } else {
+        if (cow.y < horizonY + 2) cow.y = horizonY + 2;
+        if (cow.y > VH - COW_H - 2) cow.y = VH - COW_H - 2;
+      }
+
+      // wrap around the screen
+      if (cow.x < -COW_W - 4) cow.x = VW + 2;
+      else if (cow.x > VW + 4) cow.x = -COW_W - 2;
+    }
+  }
+
+  function explodeCow(cow) {
+    cow.exploding = true;
+    cow.explosionTime = 0;
+    const cx = cow.x + COW_W / 2;
+    const cy = cow.y + COW_H / 2;
+    const colors = ["#ff5533", "#ff9900", "#ffee55", "#ffffff"];
+    for (let i = 0; i < 14; i++) {
+      const ang = Math.random() * Math.PI * 2;
+      const spd = 18 + Math.random() * 40;
+      particles.push({
+        x: cx, y: cy,
+        vx: Math.cos(ang) * spd,
+        vy: Math.sin(ang) * spd - 10,
+        life: 0.35 + Math.random() * 0.25,
+        age: 0,
+        size: 1 + Math.floor(Math.random() * 3),
+        color: colors[i % colors.length],
+      });
+    }
+    floaters.push({ x: cx, y: cow.y - 2, age: 0, life: 0.7, text: "+1" });
+  }
+
+  function updateParticles(dt) {
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.age += dt;
+      if (p.age >= p.life) { particles.splice(i, 1); continue; }
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vy += 60 * dt;
+    }
+    for (let i = floaters.length - 1; i >= 0; i--) {
+      const f = floaters[i];
+      f.age += dt;
+      if (f.age >= f.life) { floaters.splice(i, 1); continue; }
+      f.y -= 14 * dt;
+    }
+  }
+
+  function drawExplosion(g, cow) {
+    const t = cow.explosionTime / EXPLOSION_DURATION;
+    const cx = Math.round(cow.x + COW_W / 2);
+    const cy = Math.round(cow.y + COW_H / 2);
+    const r = Math.round(4 + t * 12);
+    const color = t < 0.33 ? "#ff5533" : (t < 0.66 ? "#ff9900" : "#ffee55");
+    g.fillStyle = color;
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      g.fillRect(cx + Math.round(Math.cos(a) * r) - 2, cy + Math.round(Math.sin(a) * r) - 2, 4, 4);
+    }
+    if (t < 0.3) {
+      g.fillStyle = "#ffffff";
+      g.fillRect(cx - 4, cy - 4, 8, 8);
+    }
+  }
+
+  function drawParticles(g) {
+    for (const p of particles) {
+      g.fillStyle = p.color;
+      g.fillRect(Math.round(p.x), Math.round(p.y), p.size, p.size);
+    }
+    g.font = "bold 8px 'Courier New', monospace";
+    g.textAlign = "center";
+    for (const f of floaters) {
+      g.fillStyle = "#241f1c";
+      g.fillText(f.text, Math.round(f.x) + 1, Math.round(f.y) + 1);
+      g.fillStyle = "#ffee55";
+      g.fillText(f.text, Math.round(f.x), Math.round(f.y));
+    }
+  }
+
+  // ======================= INTRO SCENE =======================
+
+  const intro = { farmerX: -40, cowX: 40, frameTimer: 0, frame: 0 };
+
+  function updateIntro(dt) {
+    intro.cowX += 26 * dt;
+    intro.farmerX += 31 * dt;
+    intro.frameTimer += dt;
+    if (intro.frameTimer > 0.14) {
+      intro.frame = (intro.frame + 1) % 2;
+      intro.frameTimer = 0;
+    }
+    if (intro.farmerX > intro.cowX - 18 || intro.cowX > VW + 40) {
+      intro.farmerX = -60 - Math.random() * 30;
+      intro.cowX = intro.farmerX + 90;
+    }
+  }
+
+  const introCow = {
+    x: 0, y: 0, vx: 1, variant: "holstein",
+    walkPhase: 0, walkSpeed: 10, wingFrame: 0,
+  };
+
+  function drawIntro(g) {
+    const groundY = Math.round(VH * HORIZON) + Math.round((VH - VH * HORIZON) * 0.4);
+    introCow.x = intro.cowX;
+    introCow.y = groundY - COW_H + 6;
+    introCow.walkPhase += 0.35;
+    drawCowSprite(g, introCow, 0);
+    const farmer = cowSprites.farmer[intro.frame];
+    g.drawImage(farmer, Math.round(intro.farmerX), groundY - farmer.height + 5);
+  }
+
+  // ======================= INPUT =======================
+
+  function canvasToBuffer(e) {
+    const rect = screenCanvas.getBoundingClientRect();
+    return {
+      x: (e.clientX - rect.left) / pixelScale,
+      y: (e.clientY - rect.top) / pixelScale,
+    };
+  }
+
+  screenCanvas.addEventListener("pointerdown", e => {
+    wakeAudio();
+    if (gameMode !== "playing") return;
+    const { x, y } = canvasToBuffer(e);
+    const PAD = 2;
+    for (let i = cows.length - 1; i >= 0; i--) {
+      const cow = cows[i];
+      if (cow.exploding) continue;
+      if (x >= cow.x - PAD && x <= cow.x + COW_W + PAD &&
+          y >= cow.y - PAD && y <= cow.y + COW_H + PAD) {
+        explodeCow(cow);
+        setScore(score + 1);
+        playPop();
+        break;
+      }
+    }
+  });
+
+  soundToggleBtn.addEventListener("click", e => {
+    e.stopPropagation();
+    soundEnabled = !soundEnabled;
+    soundToggleBtn.textContent = soundEnabled ? "Sound: On" : "Sound: Off";
+    initAudio();
+    if (masterGain) masterGain.gain.value = soundEnabled ? 0.45 : 0;
+    if (!soundEnabled) stopMusic();
+    else if (gameMode === "playing") startMusic(cows.length / MAX_COWS >= 0.8 ? "fast" : "normal");
+  });
+
+  startGameBtn.addEventListener("click", e => {
+    e.stopPropagation();
+    wakeAudio();
+    splashOverlay.classList.add("hidden");
+    startGame();
+  });
+
+  playAgainBtn.addEventListener("click", e => {
+    e.stopPropagation();
+    wakeAudio();
+    startGame();
+  });
+
+  // ======================= GAME FLOW =======================
+
+  function startGame() {
+    cows = [];
+    particles = [];
+    floaters = [];
+    setScore(0);
+    playTime = 0;
+    spawnTimer = INITIAL_SPAWN_INTERVAL * 0.5;
+    gameMode = "playing";
+    gameOverOverlay.classList.remove("visible");
+    newHiscoreEl.style.display = "none";
+    playMoo();
+    startMusic("normal");
+  }
+
+  function triggerGameOver() {
+    gameMode = "gameover";
+    stopMusic();
+    playSadTrombone();
+    finalScoreEl.textContent = "Final Score " + fmt(score);
+    if (score > hiScore) {
+      hiScore = score;
+      try { localStorage.setItem("cowClickerHiScore", String(hiScore)); } catch (e) {}
+      updateHiScoreDisplay();
+      newHiscoreEl.style.display = "block";
+    }
+    gameOverOverlay.classList.add("visible");
+  }
+
+  function updateMeter() {
+    const density = cows.length / MAX_COWS;
+    meterFillEl.style.height = (Math.min(1, density) * 100).toFixed(1) + "%";
+    meterShellEl.classList.remove("safe", "warn", "danger");
+    if (density < 0.5) {
+      meterShellEl.classList.add("safe");
+      meterStatusTextEl.textContent = "OK";
+    } else if (density < 0.75) {
+      meterShellEl.classList.add("warn");
+      meterStatusTextEl.textContent = "Uh oh";
+    } else {
+      meterShellEl.classList.add("danger");
+      meterStatusTextEl.textContent = "Moo!";
+    }
+    if (gameMode === "playing" && audioCtx && audioCtx.state === "running" && soundEnabled) {
+      startMusic(density >= 0.8 ? "fast" : "normal");
+    }
+  }
+
+  // ======================= MAIN LOOP =======================
+
+  let lastTimestamp = 0;
+
+  function frame(timestamp) {
+    if (!lastTimestamp) lastTimestamp = timestamp;
+    let dt = (timestamp - lastTimestamp) / 1000;
+    lastTimestamp = timestamp;
+    if (dt > 0.1) dt = 0.1;    // tab-switch protection
+
+    // recover from booting/resizing while the window had no size
+    if (rootEl.clientWidth !== sizedW || rootEl.clientHeight !== sizedH) resize();
+    if (!scenery || scenery.width < 8) {
+      requestAnimationFrame(frame);
+      return;
+    }
+
+    if (gameMode === "splash") {
+      updateIntro(dt);
+    } else if (gameMode === "playing") {
+      playTime += dt;
+      spawnCows(dt);
+      updateCows(dt);
+      if (cows.length >= MAX_COWS) triggerGameOver();
+    } else {
+      updateCows(dt);   // let survivors mill around behind the game-over panel
+    }
+    updateParticles(dt);
+
+    // ---- draw ----
+    ctx.clearRect(0, 0, VW, VH);
+    ctx.drawImage(scenery, 0, 0);
+    drawClouds(ctx, dt);
+
+    if (gameMode === "splash") {
+      drawIntro(ctx);
+    } else {
+      const skyCows = cows.filter(c => c.type === "sky");
+      const groundCows = cows.filter(c => c.type === "ground")
+        .sort((a, b) => a.y - b.y);
+      for (const cow of skyCows) {
+        if (cow.exploding) drawExplosion(ctx, cow);
+        else drawCowSprite(ctx, cow, playTime);
+      }
+      for (const cow of groundCows) {
+        if (cow.exploding) drawExplosion(ctx, cow);
+        else drawCowSprite(ctx, cow, playTime);
+      }
+      drawParticles(ctx);
+    }
+
+    // scale up to the screen
+    screenCtx.clearRect(0, 0, screenCanvas.width, screenCanvas.height);
+    screenCtx.drawImage(buf, 0, 0, VW, VH, 0, 0, VW * pixelScale, VH * pixelScale);
+
+    updateMeter();
+    requestAnimationFrame(frame);
+  }
+
+  // ======================= BOOT =======================
+
+  // Debug hook for automated testing: advance the simulation by ms and redraw.
+  window.__cowTick = ms => frame((lastTimestamp || performance.now()) + ms);
+  window.__cowState = () => ({
+    mode: gameMode, score, VW, VH, pixelScale,
+    cows: cows.map(c => ({
+      x: Math.round(c.x), y: Math.round(c.y),
+      type: c.type, variant: c.variant, exploding: c.exploding,
+    })),
+  });
+
+  buildAllSprites();
+  resize();
+  initClouds();
+
+  // Sprite gallery for art iteration: open index.html?gallery
+  if (location.search.includes("gallery")) {
+    document.querySelectorAll(".overlay, .hud").forEach(el => el.classList.add("hidden"));
+    const gallery = [
+      { variant: "holstein", vx: -1 }, { variant: "holstein", vx: 1 },
+      { variant: "jersey", vx: -1 },   { variant: "sky", vx: -1 },
+      { variant: "sky", vx: -1, wf: 1 }, { variant: "sky", vx: -1, wf: 2 },
+    ];
+    let phase = 0, wingT = 0, wingF = 0;
+    (function galleryFrame() {
+      phase += 0.12; wingT += 1;
+      if (wingT > 8) { wingF = (wingF + 1) % 3; wingT = 0; }
+      screenCtx.setTransform(1, 0, 0, 1, 0, 0);
+      screenCtx.fillStyle = "#4caf50";
+      screenCtx.fillRect(0, 0, screenCanvas.width, screenCanvas.height);
+      screenCtx.imageSmoothingEnabled = false;
+      const SC = parseInt((location.search.match(/scale=(\d+)/) || [])[1], 10) || 6;
+      screenCtx.setTransform(SC, 0, 0, SC, 0, 0);
+      gallery.forEach((spec, i) => {
+        const fake = {
+          variant: spec.variant, vx: spec.vx,
+          x: 6 + (i % 3) * 44, y: 8 + Math.floor(i / 3) * 40,
+          walkPhase: phase,
+          wingFrame: spec.wf !== undefined ? spec.wf : wingF,
+        };
+        drawCowSprite(screenCtx, fake, 0);
+      });
+      cowSprites.farmer.forEach((f, i) => {
+        screenCtx.drawImage(f, 6 + i * 16, 90);
+      });
+      screenCtx.setTransform(1, 0, 0, 1, 0, 0);
+      requestAnimationFrame(galleryFrame);
+    })();
+    window.__galleryTick = () => {};   // marker so tests know gallery is active
+    return;
+  }
+
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
