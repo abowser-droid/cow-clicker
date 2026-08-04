@@ -20,7 +20,9 @@ night level, and a four-voice chiptune of Chopin's Marche funèbre (Piano Sonata
 No. 2, Op. 35, third movement) that plays before Total Farmageddon begins. Past
 level 10 the game generates ever-harder rounds forever. Points vary by species;
 each cleared level adds a bonus, and the clear screen auto-advances after a
-4-second countdown. Hi-score is kept in localStorage.
+4-second countdown. Game over offers Continue (replay the level you lost on,
+score reset — arcade rules) or Start Over from level 1. Hi-score is kept in
+localStorage.
 
 ## Settings
 

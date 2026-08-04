@@ -136,6 +136,21 @@ overlay on the buffer at the end of the frame's draw pass. One-shot effects
 own oscillator graphs on demand. `audioCtx` is created lazily on first user
 gesture (`wakeAudio`) per browser autoplay policy.
 
+**Overlay buttons have a 700ms tap-guard** (`overlayGuardOK()`): the game-over and
+level-clear overlays appear while the player is spam-tapping animals, and their
+buttons sit exactly where taps land — without the guard, a tap in flight pressed
+Start Over the same instant the overlay appeared, so the game-over screen seemed
+to never show and a new game "started itself". Timestamp is stamped whenever one
+of those overlays becomes visible; don't remove the guard from a button handler.
+
+**Audio survives phone lock via three hooks**: `visibilitychange`/`pageshow`/
+`focus` call `resumeAudioAfterWake()` (resume the context, then `stopMusic()` so
+`updateMeter()` restarts the sequencer — its `setInterval` had been scheduling
+notes into a frozen audio clock), `audioCtx.onstatechange` re-resumes if iOS
+flips the context to suspended/interrupted while visible, and `wakeAudio()` on
+pointerdown covers the cases that require a user gesture. Without these, iOS
+stayed silent after screen lock until a full page refresh.
+
 **Mobile zoom is blocked in three layers**: `touch-action: none` +
 `overscroll-behavior: none` on html/body, `maximum-scale=1, user-scalable=no` in
 the viewport meta, and JS `preventDefault` on Safari's proprietary

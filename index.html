@@ -234,6 +234,7 @@
   #settings-overlay.visible { opacity: 1; pointer-events: auto; }
 
   #game-over-panel { background: linear-gradient(#5b1b8f, #2b0c46); }
+  #game-over-panel .pixel-btn { margin: 4px 3px; }
   #level-clear-panel { background: linear-gradient(#1c7a3d, #0b3d1d); }
   #settings-panel { background: linear-gradient(#444a52, #23262b); min-width: 260px; }
 
@@ -373,8 +374,9 @@
       <div id="final-score">Final Score 00000</div>
       <div id="final-level">You made it to Level 1</div>
       <div id="new-hiscore">New Hi Score!</div>
-      <button id="play-again" class="pixel-btn">Play Again</button>
-      <div id="hint-text">Click animals fast to keep the field from overflowing</div>
+      <button id="continue-game" class="pixel-btn">Continue</button>
+      <button id="play-again" class="pixel-btn">Start Over</button>
+      <div id="hint-text">Continue replays the level you lost (score starts fresh)</div>
     </div>
   </div>
 </div>
@@ -759,7 +761,7 @@
       mix: { jersey: 1 } },
     { name: "Mixed Company",     quota: 64, interval: 0.34, speedMult: 1.55,
       mix: { holstein: 2, jersey: 2, sky: 1 }, golden: true },
-    { name: "Chicken Run",       quota: 64, interval: 0.25, speedMult: 1.7,
+    { name: "Chicken Run",       quota: 48, interval: 0.33, speedMult: 1.3,
       mix: { chicken: 1 }, golden: true },
     { name: "Barnyard Bedlam",   quota: 72, interval: 0.29, speedMult: 1.75,
       mix: { holstein: 2, chicken: 2, pig: 1 }, golden: true },
@@ -1176,12 +1178,36 @@
     masterGain = audioCtx.createGain();
     masterGain.gain.value = soundEnabled ? 0.45 : 0;
     masterGain.connect(audioCtx.destination);
+    audioCtx.onstatechange = () => {
+      if (audioCtx.state !== "running" && !document.hidden && soundEnabled) {
+        audioCtx.resume().catch(() => {});
+      }
+    };
   }
 
   function wakeAudio() {
     initAudio();
-    if (audioCtx.state === "suspended") audioCtx.resume();
+    if (audioCtx.state !== "running") {
+      audioCtx.resume().catch(() => {});
+      stopMusic();   // resync the sequencer; updateMeter restarts it next frame
+    }
   }
+
+  // Phone lock / tab switch suspends the AudioContext (iOS reports it
+  // "interrupted"); without this it stays silent until a page refresh.
+  // On return: resume the context and resync the music loop, whose
+  // setInterval kept scheduling notes into a frozen audio clock.
+  function resumeAudioAfterWake() {
+    if (!audioCtx || document.hidden) return;
+    if (audioCtx.state !== "running") audioCtx.resume().catch(() => {});
+    stopMusic();     // updateMeter restarts it in the right mode next frame
+  }
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) stopMusic();
+    else resumeAudioAfterWake();
+  });
+  window.addEventListener("pageshow", resumeAudioAfterWake);
+  window.addEventListener("focus", resumeAudioAfterWake);
 
   // --- music sequencer ---
 
@@ -1567,6 +1593,7 @@
   const finalLevelEl = document.getElementById("final-level");
   const newHiscoreEl = document.getElementById("new-hiscore");
   const playAgainBtn = document.getElementById("play-again");
+  const continueBtn = document.getElementById("continue-game");
   const levelBannerEl = document.getElementById("level-banner");
   const levelClearOverlay = document.getElementById("level-clear-overlay");
   const clearTitleEl = document.getElementById("clear-title");
@@ -2028,6 +2055,11 @@
     quotaValueEl.textContent = settings.quotaScale + "%";
   });
 
+  // Overlays appear mid-tap-frenzy; ignore button taps for a beat so a click
+  // aimed at an animal can't instantly press Continue/Start Over/Next Level.
+  let overlayShownAt = 0;
+  function overlayGuardOK() { return performance.now() - overlayShownAt > 700; }
+
   startGameBtn.addEventListener("click", e => {
     e.stopPropagation();
     wakeAudio();
@@ -2037,12 +2069,25 @@
 
   playAgainBtn.addEventListener("click", e => {
     e.stopPropagation();
+    if (!overlayGuardOK()) return;
     wakeAudio();
     startGame();
   });
 
+  continueBtn.addEventListener("click", e => {
+    e.stopPropagation();
+    if (!overlayGuardOK()) return;
+    wakeAudio();
+    gameOverOverlay.classList.remove("visible");
+    newHiscoreEl.style.display = "none";
+    setScore(0);
+    gameMode = "playing";
+    startLevel(level);
+  });
+
   nextLevelBtn.addEventListener("click", e => {
     e.stopPropagation();
+    if (!overlayGuardOK()) return;
     wakeAudio();
     advanceLevel();
   });
@@ -2132,6 +2177,7 @@
     clearShowTimeout = setTimeout(() => {
       clearShowTimeout = null;
       levelClearOverlay.classList.add("visible");
+      overlayShownAt = performance.now();
       let countdown = 4;
       nextLevelBtn.textContent = "Next Level (" + countdown + ")";
       clearCountdownTimer = setInterval(() => {
@@ -2146,8 +2192,10 @@
     gameMode = "gameover";
     stopMusic();
     playSadTrombone();
+    overlayShownAt = performance.now();
     finalScoreEl.textContent = "Final Score " + fmt(score);
     finalLevelEl.textContent = "You made it to Level " + level;
+    continueBtn.textContent = "Continue (Lv " + level + ")";
     if (score > hiScore) {
       hiScore = score;
       try { localStorage.setItem("cowClickerHiScore", String(hiScore)); } catch (e) {}
